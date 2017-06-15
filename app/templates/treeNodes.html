@@ -1,0 +1,10 @@
+<ul>
+{% for data in node_info %}
+    <li> 
+        <span class="node" 
+              data-value="{{ data['fully_qualified_label'] }}">
+              {{ data['short_label'] }} --> |V|: {{ data['num_vertices'] }}, |E|: {{ data['num_edges'] }}, |V|log|V|: {{ data['vlogv'] }}
+        </span>
+    </li>
+{% endfor %}
+</ul>

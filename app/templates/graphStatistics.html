@@ -1,0 +1,525 @@
+<style>
+    #numericalStatistics {
+        width: 400px;
+        margin: 10px;
+        overflow: auto;
+    }
+
+    /*#distributionContainer {
+        width: 850px;
+        margin: 10px;
+    }
+    #degreeDistDiv {
+        width: 50%;
+        height: 400px;
+        float: left;
+        overflow: auto;
+    } 
+    #ccSizeDistDiv {
+        margin-left: 50%;
+        height: 400px;
+        overflow: auto;
+    }
+
+    #degreeDistChart {
+        width: 50%;
+        height: 400px;
+        float: left;
+    }
+
+    #ccSizeDistChart {
+        margin-left: 50%;
+        height: 400px;
+    }
+
+    #bccTreeCharts {
+        width: 1150px;
+        margin: 10px;
+    }
+
+    #apDegDistChart {
+        width: 50%;
+        height: 400px;
+        float: left;
+    }
+
+    #largeBccsDistTable {
+        width: 20%;
+        height: 300px;
+        float: left;
+        overflow: auto;
+    }
+
+    #peelLayerTable {
+        width: 30%;
+        height: 300px;
+        float: left;
+        overflow: auto;
+    }*/
+
+    td {border: 1px #DDD solid; padding: 5px; cursor: pointer;}
+
+    .selected {
+        background-color: brown;
+        color: #FFF;
+    }
+</style>
+
+<div id="numericalStatistics" align="left">
+    <table>
+        <tr>
+            <td>Vertices</td>
+            <td>{{ num_vertices }}</td>
+        </tr>
+        <tr>
+            <td>Edges</td>
+            <td>{{ num_edges }}</td>
+        </tr>
+        <tr>
+            <td>Connected Components</td>
+            <td>{{ num_cc }}</td>
+        </tr>
+        <tr>
+            <td>Isolated Vertices</td>
+            <td>{{ num_singletons }}</td>
+        </tr>
+    </table>
+    <!--<embed type="image/svg+xml" src={{degree_dist|safe}} style='max-width:400px'/>-->
+</div>
+
+<div>
+    <button id="toggleBtn" type="button">Show Charts</button>
+</div>
+
+<section id="distributionContainer">
+    <div class="toggleCharts">
+        <div id="degreeDistDiv">
+            Vertex Degree Distribution
+            <table>
+                <th>Degree</th>
+                <th>Count</th>
+            <!--{% for vh in vertex_hist %}
+                <tr>
+                    <td>{{ vh[0] }}</td>
+                    <td>{{ vh[1] }}</td>
+                </tr>
+            {% endfor %}-->
+            {% for deg in deg_bins %}
+                <tr>
+                    <td>{{ deg }}</td>
+                    <td>{{ deg_counts[loop.index0] }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        </div>
+
+        <div id="ccSizeDistDiv">
+            Connected Components Size Distribution
+            <table id="ccSizeDistTable">
+                <th>Size</th>
+                <th>Count</th>
+            <!--{% for cch in cc_hist %}
+                <tr>
+                    <td>{{ cch[0] }}</td>
+                    <td>{{ cch[1] }}</td>
+                </tr>
+            {% endfor %}-->
+            {% for size in cc_sizes %}
+                <tr>
+                    <td>{{ size }}</td>
+                    <td>{{ cc_counts[loop.index0] }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        </div>
+    </div>
+    <div class="toggleCharts" style="display: none;">
+        <div id="degreeDistChart"></div>
+        <div id="ccSizeDistChart"></div>
+    </div>
+</section>
+
+<input id="getCCIdsBtn" type="button" value="Get CC IDs"/>
+<select id="ccIdSelect"></select>
+<input id="computeBccTreeBtn" type="button" value="Compute BCCs" disabled="true"/>
+
+<script>
+    // var vertex_hist = "{{vertex_hist}}";
+    // var vertex_hist = [];
+    // var degrees = [],
+    //     counts = [];
+
+    // for (var deg in vertex_hist) {
+    //     if (!vertex_hist.hasOwnProperty(deg)) {
+    //         continue;
+    //     }
+    //     degrees.push(deg);
+    //     counts.push(vertex_hist[deg]);
+    // }
+
+    var CC = -1;
+    var BCC = -1;
+
+    var degrees = {{ deg_bins }};
+    var counts = {{ deg_counts }};
+
+    Highcharts.chart('degreeDistChart', {
+        chart: {
+            type: 'column',
+            zoomType: 'x'
+        },
+        title: {
+            text: 'Vertex Degree Distribution'
+        },
+        // subtitle: {
+        //     text: ''
+        // },
+        xAxis: {
+            categories: degrees,
+            crosshair: true
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Count'
+            }
+        },
+        tooltip: {
+            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                '<td style="padding:0"><b>{point.y}</b></td></tr>',
+            // headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+            // pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+            //     '<td style="padding:0"><b>{point.y:.1f}</b></td></tr>',
+            footerFormat: '</table>',
+            shared: true,
+            useHTML: true
+        },
+        plotOptions: {
+            column: {
+                pointPadding: 0.2,
+                borderWidth: 0
+            }
+        },
+        series: [{
+            name: 'Degree',
+            data: counts
+        }]
+    });
+
+    var cc_sizes = {{ cc_sizes }};
+    var cc_counts = {{ cc_counts }};
+
+    Highcharts.chart('ccSizeDistChart', {
+        chart: {
+            type: 'column',
+            zoomType: 'x'
+        },
+        title: {
+            text: 'Connected Components Size Distribution'
+        },
+        xAxis: {
+            categories: cc_sizes,
+            crosshair: true
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Count'
+            }
+        },
+        tooltip: {
+            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                '<td style="padding:0"><b>{point.y}</b></td></tr>',
+            // headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+            // pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+            //     '<td style="padding:0"><b>{point.y:.1f}</b></td></tr>',
+            footerFormat: '</table>',
+            shared: true,
+            useHTML: true
+        },
+        plotOptions: {
+            column: {
+                pointPadding: 0.2,
+                borderWidth: 0
+            }
+        },
+        series: [{
+            name: 'Size',
+            data: cc_counts
+        }]
+    });
+    
+
+    $('#toggleBtn').click(function() {
+        $('#distributionContainer > .toggleCharts').toggle();
+        $(this).text(function(i, text) {
+            return text === "Show Charts" ? "Show Table" : "Show Charts";
+        });
+    });
+
+    $('#ccSizeDistTable tr').click(function() {
+        $(this).addClass('selected').siblings().removeClass('selected');
+        //    td:nth-child(n)
+        var value = $(this).find('td:first').html();
+    });
+
+    $('#bccTreeStatistics').on('click', '#largeBccsDistTable tr', function() {
+        $(this).addClass('selected').siblings().removeClass('selected');
+        var iterativeEdgePeelBtn = $('#iterativeEdgePeelBtn');
+        if (iterativeEdgePeelBtn.css('display') == 'none') {
+            iterativeEdgePeelBtn.show();
+        }
+        //    td:nth-child(n)
+        var value = $(this).find('td:first').html();
+    });
+
+    $('#bccTreeStatistics').on('click', '#peelLayerTable tr', function() {
+        $(this).addClass('selected').siblings().removeClass('selected');
+        //    td:nth-child(n)
+        var peel = $(this).find('td:first').html();
+        var num_vertices = $(this).find('td:nth-child(2)').html();
+        var num_edges = $(this).find('td:nth-child(3)').html();
+        console.log(peel);
+        console.log(num_vertices);
+        console.log(num_edges);
+        if (parseInt(num_vertices) > 512) {
+            alert('Too many vertices');
+            return;
+        }
+        if (parseInt(num_edges) > 10000) {
+            alert('Too many edges');
+            return;
+        }
+        $.ajax({
+            type: 'GET',
+            url: '/get-induced-peel-layer',
+            data: {
+                cc: CC,
+                bcc: BCC,
+                peel: peel
+            },
+            success: function(response) {
+                if (response['status'] != 'success') {
+                    return;
+                }
+                var vis_data = response['vis_data'];                
+                nodesDataset = new vis.DataSet(vis_data['nodes']);
+                edgesDataset = new vis.DataSet(vis_data['edges']);
+                redrawAll('networkCanvas2');
+            }
+        });
+    });
+
+    $('#getCCIdsBtn').on('click', function(e) {
+        var value = $("#ccSizeDistTable tr.selected td:first").html()
+        $.ajax({
+            type: 'GET',
+            url: '/cc-by-size',
+            data: {
+                size: value
+            },
+            success: function(response) {
+                if (response['status'] == 'success') {
+                    $('#ccIdSelect').prop('disabled', false);
+                    $('#computeBccTreeBtn').prop('disabled', false);
+                    var cc_ids = response['cc_ids'];
+                    var dropdown = $('#ccIdSelect');
+                    dropdown.empty();
+                    for (var i = 0; i < cc_ids.length; i++) {
+                        dropdown.append($('<option>', { 
+                            value: cc_ids[i],
+                            text : cc_ids[i]
+                        }));
+                    }
+                } else {
+                    $('#ccIdSelect').prop('disabled', true);
+                    $('#computeBccTreeBtn').prop('disabled', true);
+                    alert('Too many CCs returned');
+                }
+            }
+        });
+    });
+
+    $('#computeBccTreeBtn').on('click', function(e) {
+        var value = $('#ccIdSelect').val();
+        CC = parseInt(value);
+        $.ajax({
+            type: 'GET',
+            url: '/compute-bcc-tree',
+            data: {
+                cc: value
+            },
+            success: function(response) {
+                $('#bccTreeStatistics').html(response['stats'])
+                var vis_data = response['vis_data'];
+                if (vis_data['nodes'].length > 512) {
+                    var msg = 'Too many nodes to display. ' +
+                              'So here is a list of large BCCs in this CC. ' +
+                              'One sec...';
+                    $('#bccTreeStatistics').append(msg);
+                }
+                draw_ap_deg_dist(response['ap_deg_dist']);
+                populate_large_bcc_tabble(response['large_bccs']);
+                
+                if (vis_data['nodes'].length > 512) {
+                    return;
+                }
+                nodesDataset = new vis.DataSet(vis_data['nodes']);
+                edgesDataset = new vis.DataSet(vis_data['edges']);
+                redrawAll();
+            }
+        });
+    });
+
+    $('#descendBtn').on('click', function(e) {
+        var value = $("#largeBccsDistTable tr.selected td:first").html()
+        BCC = parseInt(value);
+        console.log('CC: ' + CC + ', BCC: ' + BCC);
+        $.ajax({
+            type: 'GET',
+            url: '/get-induced-subgraph',
+            data: {
+                cc: CC,
+                bcc: BCC
+            },
+            success: function(response) {
+                console.log(response);
+                if (response['status'] == 'success') {
+                    var canvas2 = $('#networkCanvas2');
+                    if (canvas2.css('display') == 'none') {
+                        canvas2.show();
+                        canvas2.siblings().show();
+                    }
+                    var vis_data = response['vis_data'];
+                    nodesDataset = new vis.DataSet(vis_data['nodes']);
+                    edgesDataset = new vis.DataSet(vis_data['edges']);
+                    redrawAll('networkCanvas2');
+                } else {
+                    $('#iterativeEdgePeel').html(response['status']);
+                }
+            }
+        });
+    });
+
+    $('#iterativeEdgePeelBtn').on('click', function(e) {
+        var value = $("#largeBccsDistTable tr.selected td:first").html()
+        BCC = parseInt(value);
+        console.log('CC: ' + CC + ', BCC: ' + BCC);
+        $.ajax({
+            type: 'GET',
+            url: '/get-edge-peel-layers',
+            data: {
+                cc: CC,
+                bcc: BCC
+            },
+            success: function(response) {
+                console.log(response);
+                populate_peel_layer_table(response);
+            }
+        });
+    });
+
+    function draw_ap_deg_dist(data) {
+        if (data['degrees'].length == 0) {
+            $('#bccTreeStatistics').append('No articulation points...');
+            return;
+        }
+        var bccTreeCharts = '<div id="bccTreeCharts"/>';
+        $('#bccTreeStatistics').append(bccTreeCharts);
+
+        var apDegDistChart = '<div id="apDegDistChart"></div>';
+        $('#bccTreeCharts').append(apDegDistChart);
+        Highcharts.chart('apDegDistChart', {
+            chart: {
+                type: 'column',
+                zoomType: 'x'
+            },
+            title: {
+                text: 'Articulation Points Degree Distribution'
+            },
+            xAxis: {
+                categories: data['degrees'],
+                crosshair: true
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Count'
+                }
+            },
+            tooltip: {
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y}</b></td></tr>',
+                // headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                // pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                //     '<td style="padding:0"><b>{point.y:.1f}</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: 'Degree',
+                data: data['counts']
+            }]
+        });
+    }
+
+    function populate_large_bcc_tabble(data) {
+        if (data['BCC_ids'].length == 0) {
+            // shouldn't really occur...
+            return;
+        }
+        var largeBccsTable = '<div id="largeBccsDistTable"></div>';
+        $('#bccTreeCharts').append(largeBccsTable);
+
+        var table = '<table><th>BCC_ID</th><th>Edge Count</th>';
+        for (var i = 0; i < data['BCC_ids'].length; i++) {
+            table += '<tr><td>' + data['BCC_ids'][i] + '</td><td>' + data['counts'][i]  + '</td></tr>';
+        }
+        table += '</table>';
+        $('#largeBccsDistTable').append(table);
+        $('#descendBtn').show();
+    }
+
+    function populate_peel_layer_table(data) {
+        var peels = data['peels'];
+        var num_vertices = data['num_vertices'];
+        var num_edges = data['num_edges'];
+        var vlogv = data['vlogv'];
+        if (peels.length == 0) {
+            // shouldn't really occur...
+            return;
+        }
+        var peelLayerTable = '<div id="peelLayerTable"></div>';
+        $('#bccTreeCharts').append(peelLayerTable);
+
+        var table = '<table><th>Peel</th><th>Vertex Count</th><th>Edge Count</th><th>|V|log|V|</th>';
+        for (var i = 0; i < peels.length; i++) {
+            table += '<tr><td>' + peels[i] + '</td><td>' + num_vertices[i] + '</td><td>' + num_edges[i] + '</td><td>' + vlogv[i] + '</td></tr>';
+        }
+        table += '</table>';
+        $('#peelLayerTable').html(table);
+    }
+
+    function get_largest_bccs(cc) {
+        $.ajax({
+            type: 'GET',
+            url: '/largest-bccs',
+            data: {
+                cc: cc
+            },
+            success: function(response) {
+                return JSON.stringify(response['bccs']);
+            }
+        });
+    }
+</script>

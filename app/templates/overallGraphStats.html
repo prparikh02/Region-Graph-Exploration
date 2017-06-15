@@ -1,0 +1,41 @@
+<style>
+    #numericalStatistics {
+        width: 400px;
+        margin: 10px;
+        overflow: auto;
+    }
+
+    td {border: 1px #DDD solid; padding: 5px; cursor: pointer;}
+
+    .selected {
+        background-color: brown;
+        color: #FFF;
+    }
+</style>
+
+<div id="numericalStatistics" align="left">
+    <table>
+        <tr>
+            <td>Vertices</td>
+            <td>{{ num_vertices }}</td>
+        </tr>
+        <tr>
+            <td>Edges</td>
+            <td>{{ num_edges }}</td>
+        </tr>
+        <tr>
+            <td>Connected Components</td>
+            <td>{{ num_cc }}</td>
+        </tr>
+        <tr>
+            <td>Isolated Vertices</td>
+            <td>{{ num_singletons }}</td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    $('#numericalStatistics tr').click(function() {
+        $(this).addClass('selected').siblings().removeClass('selected');
+    });
+</script>

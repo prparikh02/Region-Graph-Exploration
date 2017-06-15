@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Peel Explorer Express</title>
+</head>
+
+<style>
+    #networkCanvas {
+        float: left;
+        width: 700px;
+        height: 700px;
+        border: 1px solid lightgray;
+    }
+
+    #hierarchyTree {
+        width: 700px;
+        height: 400px;
+        /*margin: 10px;*/
+        margin-right: 10px;
+        overflow: auto;
+        float: left;
+        border: 1px solid lightgray;
+    }
+
+    .collapsibleList li {
+        list-style-image : url('/static/css/button.png');
+        cursor: pointer;
+    }
+
+    li.collapsibleListOpen {
+        list-style-image : url('/static/css/button-open.png');
+        cursor: pointer;
+    }
+
+    li.collapsibleListClosed {
+        list-style-image : url('/static/css/button-closed.png');
+        cursor: pointer;
+    }
+
+    button {margin-bottom: 5px; margin-top: 5px;}
+
+    .selected {
+        background-color: grey;
+        /*color: #FFF;*/
+    }
+
+    .canvasContainers {
+        float: left;
+    }
+
+    /*#nodeInfoContainer {
+        width: 700px;
+        height: 400px;
+        overflow-y: auto;
+        float: left;
+    }*/
+
+</style>
+
+<body>
+    <h1>Peel Explorer</h1>
+    <p>Parth Parikh, James Abello</p>
+
+    <div>
+        <h3>Available Graphs</h3>
+        <select id="graphSelect">
+        {% for file in graph_files %}
+            <option value="{{ file }}">{{ file }}</option>
+        {% endfor %}
+        </select>
+        <button id="loadGraphBtn" type="button">Load Graph</button>
+    </div>
+
+    <div>
+        <h3>Overall Statistics</h3>
+        <div id="graphStatistics"></div>
+    </div>
+
+    <div>
+        <div style="float: left; margin-right: 20px;">
+            <h3>Available Hierarchy Trees</h3>
+            <select id="treeSelect">
+            {% for file in tree_files %}
+                <option value="{{ file }}">{{ file }}</option>
+            {% endfor %}
+            </select>
+            <button id="loadTreeBtn" type="button">Load Tree</button>
+        </div>
+        <div style="float: left; margin-left: 20px;">
+            <h3>Save Hierarchy Tree</h3>
+            Filename: <input id="saveTreeInput" type="text">
+            <button id="saveTreeBtn" type="button" disabled=true>Save Hierarchy Tree</button>
+        </div>
+    </div>
+
+    <div style="clear: both;">
+        <h3>Hierarchy Tree</h3>
+        <div id="hierarchyTree">
+            <ul id="hierarchyTreeRoot" class="collapsibleList">
+            </ul>
+        </div>
+        <div id="treeButtons">
+            <div>
+                <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
+            </div>
+            <br/>
+            
+            <div>
+                <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
+            </div>
+            <div>
+                <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
+            </div>
+            <br/>
+
+            <div>
+                <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
+            </div>
+            <div>
+                <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
+            </div>
+            <div>
+                <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="clear: both;">
+        <h3>BCC Tree Statistics</h3>
+        <div id="bccTreeStatistics">
+            <!--<div id="bccTreeCharts"></div>-->
+        </div>
+        <div style="clear: both;">
+            <button id="descendBtn" type="button" style="display: none;">Descend</button>
+            <div id="iterativeEdgePeel" style="display: none;"></div>
+            <button id="iterativeEdgePeelBtn" style="display: none;" type="button">Edge Peeling</button>
+        </div>
+    </div>
+
+    <div style="clear: both;">
+        <div class="canvasContainers">
+            <h3>Network</h3>
+            <div id="networkCanvas"></div>
+            <div id="dev-ops"></div>
+        </div>
+        
+        <!--<div class="canvasContainers">
+            <h3>Network Drilldown</h3>
+            <div id="networkCanvas2"></div>
+            <div id="dev-ops2"></div>
+        </div>-->
+    </div>
+
+    <div>
+        <div id="nodeInfo"></div>
+    </div>
+</body>
+
+<script src="{{url_for('static', filename='js/jquery-3.2.1.min.js')}}"></script>
+<script src="/static/js/vis.min.js"></script>
+<link href="/static/css/vis.min.css" rel="stylesheet" type="text/css" />
+<script src="/static/js/main-network-view.js"></script>
+<script src="/static/js/renderjson.js"></script>
+<script src="/static/js/CollapsibleLists.js"></script>
+
+<script>
+    $('#loadGraphBtn').on('click', function(e) {
+        $('#graphSelect').prop('disabled', true);
+        $('#loadGraphBtn').prop('disabled', true);
+        $('#treeSelect').prop('disabled', true);
+        $('#loadTreeBtn').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/load-graph',
+            data: {
+                filename: $('#graphSelect').val()
+            },
+            success: function(response) {
+                $("#graphStatistics").html(response);
+            },
+            complete: function() {
+                $('#graphSelect').prop('disabled', false);
+                $('#loadGraphBtn').prop('disabled', false);
+                $('#treeSelect').prop('disabled', false);
+                $('#loadTreeBtn').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#loadTreeBtn').on('click', function(e) {
+        $('#graphSelect').prop('disabled', true);
+        $('#loadGraphBtn').prop('disabled', true);
+        $('#treeSelect').prop('disabled', true);
+        $('#loadTreeBtn').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/load-tree',
+            data: {
+                filename: $('#treeSelect').val()
+            },
+            success: function(response) {
+                $('#hierarchyTreeRoot').html(
+                    '<li><span class="node" data-value="root">Root</span></li>'
+                );
+                CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
+                $('#saveTreeBtn').prop('disabled', false);
+            },
+            complete: function() {
+                $('#graphSelect').prop('disabled', false);
+                $('#loadGraphBtn').prop('disabled', false);
+                $('#treeSelect').prop('disabled', false);
+                $('#loadTreeBtn').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#saveTreeBtn').on('click', function(e) {
+        $('#saveTreeBtn').prop('disabled', true);
+        var filename = $('#saveTreeInput').val();
+        $.ajax({
+            type: 'GET',
+            url: '/save-tree',
+            data: {
+                filename: filename
+            },
+            success: function(resposne) {
+                alert(response['msg']);
+            },
+            complete: function() {
+                $('#saveTreeBtn').prop('disabled', false);
+            }
+        });
+
+    });
+
+    $('body').on('click', 'span.node', function(e) {
+        e.preventDefault();
+        var $nodes = $('span.node');
+        $nodes.removeClass('selected');
+        $(this).addClass('selected');
+    });
+
+    $('#getNodeChildrenBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var fullyQualifiedLabel = node.attr('data-value');
+        $('#getNodeChildrenBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/get-hnode-children',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                node.after(response);
+                // TODO: Fix this to update each sub-list
+                // This is probably better: http://jordnkr.github.io/collapsible/
+                // CollapsibleLists.applyTo(node[0]);
+                // CollapsibleLists.applyTo(node[0]);
+                // CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
+                // CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
+            },
+            complete: function() {
+                $('#getNodeChildrenBtn :button').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#induceNodeSubgraphBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var fullyQualifiedLabel = node.attr('data-value');
+        $('#induceNodeSubgraphBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/induce-hnode-subgraph',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var vis_data = response['vis_data'];                
+                nodesDataset = new vis.DataSet(vis_data['nodes']);
+                edgesDataset = new vis.DataSet(vis_data['edges']);
+                redrawAll('networkCanvas');
+            },
+            complete: function() {
+                $('#induceNodeSubgraphBtn :button').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#computeNodeConnectedComponentsBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var operation = 'connected_components';
+        $('#computeNodeConnectedComponentsBtn :button').prop('disabled', true);
+        decompose_by_operation(node, operation);
+        $('#computeNodeConnectedComponentsBtn :button').prop('disabled', false);
+    });
+
+    $('#computeNodeBiconnectedComponentsBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var operation = 'biconnected_components';
+        $('#computeNodeBiconnectedComponentsBtn :button').prop('disabled', true);
+        decompose_by_operation(node, operation);
+        $('#computeNodeBiconnectedComponentsBtn :button').prop('disabled', false);
+    });
+
+    $('#computeNodeEdgePeelBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var operation = 'edge_peel';
+        $('#computeNodeEdgePeelBtn :button').prop('disabled', true);
+        decompose_by_operation(node, operation);
+        $('#computeNodeEdgePeelBtn :button').prop('disabled', false);
+    });
+
+    function decompose_by_operation(node, operation) {
+        var fullyQualifiedLabel = node.attr('data-value');
+        $.ajax({
+            type: 'GET',
+            url: '/decompose-by-operation',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel,
+                operation: operation
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                node.after(response);
+            }
+        })
+    }
+</script>
+
+</html>

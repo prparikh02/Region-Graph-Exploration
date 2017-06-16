@@ -80,29 +80,18 @@ class PartitionNode(object):
         return len(self.children) == 0
 
     def induce_subgraph(self, G):
+        if self.partition_type == 'root':
+            print('Node is root. Nothing to induce. G unmodified.')
+            return
         G.clear_filters()
-        if self.partition_type == 'vertex':
-            vp = G.new_vp('bool', vals=False)
-            try:
-                vp.a[self.vertex_indices] = True
-            except IndexError:
-                err_msg = 'vertex_indices not in G'
-                raise IndexError(err_msg)
-            G.set_vertex_filter(vp)
-        elif self.partition_type == 'edge':
-            ep = G.new_ep('bool', vals=False)
-            vp = G.new_vp('bool', vals=True)
-            try:
-                ep.a[self.edge_indices] = True
-            except IndexError:
-                err_msg = 'edge_indices not in G'
-                raise IndexError(err_msg)
-            G.set_edge_filter(ep)
-
-            # Take care of isolated vertices
-            deg = G.degree_property_map('out')
-            isolated = np.where(deg.a == 0)[0]
-            vp.a[isolated] = False
-            G.set_vertex_filter(vp)
-        else:
-            print('Node is root. Nothing to induce.')
+        vp = G.new_vp('bool', vals=False)
+        ep = G.new_ep('bool', vals=False)
+        try:
+            vp.a[self.vertex_indices] = True
+            ep.a[self.edge_indices] = True
+        except:
+            err_msg = 'vertex or edge indices not in G'
+            raise IndexError(err_msg)
+        G.set_vertex_filter(vp)
+        G.set_edge_filter(ep)
+        print('Vertex and edge filters applied to G')

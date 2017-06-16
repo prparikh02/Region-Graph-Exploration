@@ -1,4 +1,5 @@
 import graph_tool.all as gt
+import networkx as nx
 import numpy as np
 from subprocess import Popen, PIPE
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
@@ -8,7 +9,7 @@ def connected_components(G, vertex_indices=None, edge_indices=None):
     '''
     Partition Type: Vertex
 
-    Description: Given graph G and sets of indices, vertex and/or edge indices,
+    Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and partition vertices by connected components.
     '''
 
@@ -22,8 +23,12 @@ def connected_components(G, vertex_indices=None, edge_indices=None):
 
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
-    vp.a[vertex_indices] = True
-    ep.a[edge_indices] = True
+    try:
+        vp.a[vertex_indices] = True
+        ep.a[edge_indices] = True
+    except:
+        err_msg = 'vertex or edge indices not in G'
+        raise IndexError(err_msg)
     G.set_vertex_filter(vp)
     G.set_edge_filter(ep)
 
@@ -80,7 +85,7 @@ def biconnected_components(G, vertex_indices=None, edge_indices=None):
     '''
     Partition Type: Edge
 
-    Description: Given graph G and sets of indices, vertex and/or edge indices,
+    Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and partition vertices by biconnected components.
     '''
 
@@ -94,8 +99,12 @@ def biconnected_components(G, vertex_indices=None, edge_indices=None):
 
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
-    vp.a[vertex_indices] = True
-    ep.a[edge_indices] = True
+    try:
+        vp.a[vertex_indices] = True
+        ep.a[edge_indices] = True
+    except:
+        err_msg = 'vertex or edge indices not in G'
+        raise IndexError(err_msg)
     G.set_vertex_filter(vp)
     G.set_edge_filter(ep)
 
@@ -143,13 +152,31 @@ def biconnected_components(G, vertex_indices=None, edge_indices=None):
 
 
 def edge_peel(G, vertex_indices=None, edge_indices=None):
+    '''
+    Partition Type: Edge
+
+    Description: Given graph G and sets of both vertex and edge indices,
+        induce subgraph and partition edges by means of iterative peeling.
+    '''
+
+    if not isinstance(G, gt.Graph):
+        err_msg = 'G must be a graph_tool.Graph instance'
+        raise ValueError(err_msg)
+
+    if vertex_indices is None and edge_indices is None:
+        err_msg = 'Must provide either vertex indices or edge indices'
+        raise ValueError(err_msg)
 
     cmd = './app/graph_peeling.bin -t core -o core'
 
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
-    vp.a[vertex_indices] = True
-    ep.a[edge_indices] = True
+    try:
+        vp.a[vertex_indices] = True
+        ep.a[edge_indices] = True
+    except:
+        err_msg = 'vertex or edge indices not in G'
+        raise IndexError(err_msg)
     G.set_vertex_filter(vp)
     G.set_edge_filter(ep)
     efilt = ep

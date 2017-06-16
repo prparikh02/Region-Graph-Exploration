@@ -74,6 +74,8 @@ def load_tree():
 @app.route('/save-tree')
 def save_tree():
     filename = request.args.get('filename')
+    if not filename.endswith('.pkl'):
+        filename += '.pkl'
     try:
         with open(filename, 'wb') as f:
             pickle.dump(Mem.T, f)
@@ -166,7 +168,7 @@ def decompose_by_operation():
     if len(children) == 1:
         child = children[0]
         if (len(child.vertex_indices) == len(vlist) and
-                len(child.edge_indices) == len(vlist)):
+                len(child.edge_indices) == len(elist)):
             msg = 'Could not decompose any further using method: {}'
             return jsonify({'msg': msg.format(operation)})
 

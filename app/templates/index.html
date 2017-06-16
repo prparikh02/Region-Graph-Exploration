@@ -219,6 +219,10 @@
     $('#saveTreeBtn').on('click', function(e) {
         $('#saveTreeBtn').prop('disabled', true);
         var filename = $('#saveTreeInput').val();
+        if (!filename) {
+            alert('Empty filename');
+            return;
+        }
         $.ajax({
             type: 'GET',
             url: '/save-tree',
@@ -226,7 +230,7 @@
                 filename: filename
             },
             success: function(resposne) {
-                alert(response['msg']);
+                alert(resposne['msg']);
             },
             complete: function() {
                 $('#saveTreeBtn').prop('disabled', false);

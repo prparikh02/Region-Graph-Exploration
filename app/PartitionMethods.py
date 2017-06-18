@@ -227,7 +227,7 @@ def edge_peel(G, vertex_indices=None, edge_indices=None):
         node = PartitionNode(vertex_indices=v_idx,
                              edge_indices=e_idx,
                              partition_type='edge',
-                             label='epl_{}_{}'.format(peel, idx),
+                             label='EPL_{}_{}'.format(peel, idx),
                              note='peel {}'.format(peel))
         children.append(node)
         idx += 1

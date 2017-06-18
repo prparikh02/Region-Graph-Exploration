@@ -7,7 +7,6 @@ class PartitionTree(object):
 
     def __init__(self):
         self.root = None
-        self.inverted_index = {}
 
     # def __repr__(self):
     #     pass
@@ -33,6 +32,23 @@ class PartitionTree(object):
         with open(filename, 'wb') as f:
             pickle.dump(self, f)
 
+    @classmethod
+    def collect_indices(root):
+        Q = Queue.Queue()
+        vlist = set()
+        elist = set()
+        Q.put(root)
+        while Q.qsize() > 0:
+            node = Q.get()
+            if node.is_leaf():
+                vlist.update(node.vertex_indices)
+                elist.update(node.edge_indices)
+            for child in node.children:
+                Q.put(child)
+        assert len(vlist) == root.num_vertices()
+        assert len(elist) == root.num_edges()
+        return vlist, elist
+
 
 class PartitionNode(object):
 
@@ -40,8 +56,8 @@ class PartitionNode(object):
                  parent=None, partition_type='vertex', note=''):
         self.vertex_indices = vertex_indices
         self.edge_indices = edge_indices
-        self.num_vertices = len(vertex_indices)
-        self.num_edges = len(edge_indices)
+        self._num_vertices = len(vertex_indices)
+        self._num_edges = len(edge_indices)
         if parent is not None:
             if not isinstance(parent, PartitionNode):
                 err_msg = 'Parent must be either PartitionNode object or None'
@@ -59,8 +75,9 @@ class PartitionNode(object):
         self.note = note
 
     def __len__(self):
-        if self.partition_type == 'edge':
-            return len(self.edge_indices)
+        # if self.partition_type == 'edge':
+        #     return len(self.edge_indices)
+        # return len(self.vertex_indices)
         return len(self.vertex_indices)
 
     def parent_by_partition_type(self, partition_type=None):
@@ -82,13 +99,16 @@ class PartitionNode(object):
         return len(self.children) == 0
 
     def num_vertices(self):
-        return self.num_vertices
+        return self._num_vertices
 
     def num_edges(self):
-        return self.num_edges
+        return self._num_edges
+
+    def num_children(self):
+        return len(self.children)
 
     def num_siblings(self):
-        if not self.parent:
+        if self.parent is not None:
             return 0
         return len(self.parent.children) - 1
 

@@ -25,15 +25,16 @@ function redrawAll(container='networkCanvas') {
         },
         edges: {
             scaling: {
-                min: 1,
-                max: 20
+                min: 0.1,
+                max: 5
             },
             width: 0.15,
             color: {
                 inherit: 'from'
             },
             smooth: {
-                type: 'continuous'
+                // type: 'continuous'
+                enabled: false
             }
         },
         // physics: false,
@@ -241,5 +242,3 @@ function focusRandom() {
     finishMessage = 'Node: ' + nodeId + ' in focus.';
     network.focus(nodeId, options);
 }
-
-// redrawAll();

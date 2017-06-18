@@ -97,11 +97,10 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
     for e in G.edges():
         src = G.vp['id'][e.source()]
         tar = G.vp['id'][e.target()]
-        # src = G.vertex_index[e.source()]
-        # tar = G.vertex_index[e.target()]
         edges.append({
             'from': src,
-            'to': tar
+            'to': tar,
+            'value': 1
         })
 
     return {'nodes': nodes, 'edges': edges}
@@ -137,6 +136,7 @@ def to_vis_json_bcc_tree(G, filename=None):
         edges.append({
                 'from': src,
                 'to': tar,
+                'value': 1
             })
 
     return {'nodes': nodes, 'edges': edges}

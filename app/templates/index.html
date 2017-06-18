@@ -124,6 +124,9 @@
             <div>
                 <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
             </div>
+            <div>
+                <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
+            </div>
         </div>
     </div>
 
@@ -300,29 +303,34 @@
     $('#computeNodeConnectedComponentsBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var operation = 'connected_components';
-        $('#computeNodeConnectedComponentsBtn :button').prop('disabled', true);
-        decompose_by_operation(node, operation);
-        $('#computeNodeConnectedComponentsBtn :button').prop('disabled', false);
+        var btn = $('#computeNodeBiconnectedComponentsBtn :button')
+        decompose_by_operation(node, operation, btn);
     });
 
     $('#computeNodeBiconnectedComponentsBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var operation = 'biconnected_components';
-        $('#computeNodeBiconnectedComponentsBtn :button').prop('disabled', true);
-        decompose_by_operation(node, operation);
-        $('#computeNodeBiconnectedComponentsBtn :button').prop('disabled', false);
+        var btn = $('#computeNodeBiconnectedComponentsBtn :button')
+        decompose_by_operation(node, operation, btn);
     });
 
     $('#computeNodeEdgePeelBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var operation = 'edge_peel';
-        $('#computeNodeEdgePeelBtn :button').prop('disabled', true);
-        decompose_by_operation(node, operation);
-        $('#computeNodeEdgePeelBtn :button').prop('disabled', false);
+        var btn = $('#computeNodeEdgePeelBtn :button')
+        decompose_by_operation(node, operation, btn);
     });
 
-    function decompose_by_operation(node, operation) {
+    $('#computeKConnectedComponentsBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var operation = 'k_connected_components';
+        var btn = $('#computeKConnectedComponentsBtn :button')
+        decompose_by_operation(node, operation, btn);
+    });
+
+    function decompose_by_operation(node, operation, btn) {
         var fullyQualifiedLabel = node.attr('data-value');
+        btn.prop('disabled', true);
         $.ajax({
             type: 'GET',
             url: '/decompose-by-operation',
@@ -336,6 +344,9 @@
                     return;
                 }
                 node.after(response);
+            },
+            complete: function() {
+                btn.prop('disabled', false);
             }
         })
     }

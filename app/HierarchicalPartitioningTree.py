@@ -40,6 +40,8 @@ class PartitionNode(object):
                  parent=None, partition_type='vertex', note=''):
         self.vertex_indices = vertex_indices
         self.edge_indices = edge_indices
+        self.num_vertices = len(vertex_indices)
+        self.num_edges = len(edge_indices)
         if parent is not None:
             if not isinstance(parent, PartitionNode):
                 err_msg = 'Parent must be either PartitionNode object or None'
@@ -78,6 +80,17 @@ class PartitionNode(object):
 
     def is_leaf(self):
         return len(self.children) == 0
+
+    def num_vertices(self):
+        return self.num_vertices
+
+    def num_edges(self):
+        return self.num_edges
+
+    def num_siblings(self):
+        if not self.parent:
+            return 0
+        return len(self.parent.children) - 1
 
     def induce_subgraph(self, G):
         if self.partition_type == 'root':

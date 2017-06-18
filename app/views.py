@@ -11,14 +11,15 @@ from Helpers import statistics, to_vis_json, induce_subgraph
 from pymongo import MongoClient
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
 from PartitionMethods import connected_components, biconnected_components, \
-                             edge_peel
+                             edge_peel, k_connected_components
 
 GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
 OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,
-    'edge_peel': edge_peel
+    'edge_peel': edge_peel,
+    'k_connected_components': k_connected_components
 }
 float_formatter = lambda x: '{:.2f}'.format(x)
 # client = MongoClient('localhost', 27017)

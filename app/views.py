@@ -236,3 +236,12 @@ def induce_node_subgraph():
 
     response = induce_subgraph(Mem.gm.g, vlist, elist)
     return jsonify(response)
+
+
+@app.route('/get-hierarchy-tree')
+def get_hierarchy_tree():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    
+    nodes = PartitionTree.traverse_dfs(Mem.T.root, return_stats=True)
+    return jsonify({'nodes': nodes})

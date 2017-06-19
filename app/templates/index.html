@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Peel Explorer Express</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/clusterize.css">
 </head>
 
 <style>
@@ -15,7 +16,7 @@
     }
 
     #hierarchyTree {
-        width: 700px;
+        width: 800px;
         height: 400px;
         /*margin: 10px;*/
         margin-right: 10px;
@@ -41,8 +42,10 @@
 
     button {margin-bottom: 5px; margin-top: 5px;}
 
+    td {border: 1px #DDD solid; padding: 5px; cursor: pointer;}
+
     .selected {
-        background-color: grey;
+        background-color: rgba(255, 0, 0, 0.5);
         /*color: #FFF;*/
     }
 
@@ -95,45 +98,77 @@
         </div>
     </div>
 
-    <div style="clear: both;">
+    <div id="htreeContainer" style="clear: both;">
         <h3>Hierarchy Tree</h3>
-        <div id="hierarchyTree">
-            <ul id="hierarchyTreeRoot" class="collapsibleList">
-            </ul>
+        <div>
+            <button id="toggleHtreeBtn" type="button">Show Table</button>
         </div>
-        <div id="treeButtons">
-            <div>
-                <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
-            </div>
-            <br/>
-            
-            <div>
-                <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
-            </div>
-            <div>
-                <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
-            </div>
-            <br/>
 
-            <div>
-                <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
+        <div class="toggleHtreeContainer">
+            <div id="hierarchyTree">
+                <ul id="hierarchyTreeRoot" class="collapsibleList">
+                </ul>
             </div>
-            <div>
-                <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
+            <div id="treeButtons">
+                <div id="displayGraphButtons">
+                    <div>
+                        <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
+                    </div>
+                    <div>
+                        <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
+                    </div>
+                </div>
+                <br/>
+                
+                <div id="htreeExplorationButtons">
+                    <div>
+                        <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+                    </div>
+                    <div>
+                        <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
+                    </div>
+                </div>
             </div>
-            <div>
-                <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+        </div>
+        <div class="toggleHtreeContainer" style="display: none;">
+            <input type="text" id="htreeTableSearch" placeholder="Type row number or percent" />
+            <div class="clusterize">
+                <div id="htreeTablescrollArea" class="clusterize-scroll">
+                    <table id="htreeTable">
+                        <thead>
+                            <tr>
+                                <th>Node Label</th>
+                                <th>|V|</th>
+                                <th>|E|</th>
+                                <th>|V|log|V|</th>
+                            </tr>
+                        </thead>
+                        <tbody id="htreeTableContentArea" class="clusterize-content">
+                            <tr class="clusterize-no-data">
+                                <td>Click below to load hierarchy table</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div>
-                <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
-            </div>
+            <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
         </div>
     </div>
+
+    <!-- https://clusterize.js.org/ -->
 
     <div style="clear: both;">
         <h3>BCC Tree Statistics</h3>
         <div id="bccTreeStatistics">
-            <!--<div id="bccTreeCharts"></div>-->
         </div>
         <div style="clear: both;">
             <button id="descendBtn" type="button" style="display: none;">Descend</button>
@@ -148,12 +183,7 @@
             <div id="networkCanvas"></div>
             <div id="dev-ops"></div>
         </div>
-        
-        <!--<div class="canvasContainers">
-            <h3>Network Drilldown</h3>
-            <div id="networkCanvas2"></div>
-            <div id="dev-ops2"></div>
-        </div>-->
+
     </div>
 
     <div>
@@ -167,6 +197,7 @@
 <script src="/static/js/main-network-view.js"></script>
 <script src="/static/js/renderjson.js"></script>
 <script src="/static/js/CollapsibleLists.js"></script>
+<script src="/static/js/clusterize.min.js"></script>
 
 <script>
     $('#loadGraphBtn').on('click', function(e) {
@@ -242,6 +273,13 @@
 
     });
 
+    $('#toggleHtreeBtn').click(function() {
+        $('#htreeContainer > .toggleHtreeContainer').toggle();
+        $(this).text(function(i, text) {
+            return text === "Show Table" ? "Show Tree" : "Show Table";
+        });
+    });
+
     $('body').on('click', 'span.node', function(e) {
         e.preventDefault();
         var $nodes = $('span.node');
@@ -261,12 +299,6 @@
             },
             success: function(response) {
                 node.after(response);
-                // TODO: Fix this to update each sub-list
-                // This is probably better: http://jordnkr.github.io/collapsible/
-                // CollapsibleLists.applyTo(node[0]);
-                // CollapsibleLists.applyTo(node[0]);
-                // CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
-                // CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
             },
             complete: function() {
                 $('#getNodeChildrenBtn :button').prop('disabled', false);
@@ -296,6 +328,99 @@
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#htreeTable tr').click(function() {
+        $(this).addClass('selected').siblings().removeClass('selected');
+    });
+
+    $('#htreeTableBtn').on('click', function(e) {
+        $('#htreeTableBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/get-hierarchy-tree',
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+
+                var rows = [],
+                    search = $('#htreeTableSearch')[0];
+
+                var colorPicker = function(num_vertices) {
+                    var color = 'rgba(0, 0, 0, 0);';
+                    num_vertices = parseInt(num_vertices);
+                    if (num_vertices >=  65536) {
+                        color = 'rgba(135, 0, 0, 0.9);';
+                    } else if (num_vertices >= 16384) {
+                        color = 'rgba(165, 0, 0, 0.7);';
+                    } else if (num_vertices >= 4096) {
+                        color = 'rgba(195, 0, 0, 0.5);';
+                    } else if (num_vertices >= 1024) {
+                        color = 'rgba(225, 0, 0, 0.3);';
+                    } else if (num_vertices >= 256) {
+                        color = 'rgba(255, 0, 0, 0.1);';
+                    } else {
+                        color = 'rgba(0, 0, 0, 0);';
+                    }
+                    return color;
+                }
+
+                var nodes = response['nodes'];
+                for(var i = 0; i < nodes.length; i++) {
+                    var node = nodes[i];
+                    var color = colorPicker(node['num_vertices']);
+                    rows.push({
+                        values: [node['label'],
+                                 node['num_vertices'],
+                                 node['num_edges'],
+                                 node['vlogv']
+                                ],
+                        markup: '<tr style="background-color: ' + color + '">' +
+                            '<td>' + node['label'] + '</td>' +
+                            '<td>' + node['num_vertices'] + '</td>' +
+                            '<td>' + node['num_edges'] + '</td>' +
+                            '<td>' + node['vlogv'] + '</td>' +
+                            '</tr>',
+                        active: true
+                    });
+                }
+
+                var filterRows = function(rows) {
+                    var results = [];
+                    for (var i = 0; i < rows.length; i++) {
+                        if (rows[i].active) {
+                            results.push(rows[i].markup)
+                        }
+                    }
+                    return results;
+                }
+
+                var clusterize = new Clusterize({
+                    rows: filterRows(rows),
+                    scrollId: 'htreeTablescrollArea',
+                    contentId: 'htreeTableContentArea'
+                });
+
+                var onSearch = function() {
+                    for (var i = 0; i < rows.length; i++) {
+                        var suitable = false;
+                        for (var j = 0; j < rows[i].values.length; j++) {
+                            if (rows[i].values[j].toString().indexOf(search.value) + 1) {
+                                suitable = true;
+                            }
+                        }
+                        rows[i].active = suitable;
+                    }
+                    clusterize.update(filterRows(rows));
+                }
+                search.oninput = onSearch;
+            },
+            complete: function() {
+                $('#htreeTableBtn :button').prop('disabled', false);
             }
         });
     });

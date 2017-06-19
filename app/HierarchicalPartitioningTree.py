@@ -50,6 +50,32 @@ class PartitionTree(object):
         assert len(elist) == root.num_edges()
         return list(vlist), list(elist)
 
+    @classmethod
+    def traverse_dfs(cls, root, return_stats=False):
+        float_formatter = lambda x: '{:.2f}'.format(x)
+        stack = []
+        stack.append(root)
+        nodes = []
+
+        while len(stack) > 0:
+            node = stack.pop()
+            V = node.num_vertices()
+            E = node.num_edges()
+            vlogv = float_formatter(V * np.log2(V))
+            if return_stats:
+                nodes.append({
+                    'label': node.label,
+                    'num_vertices': V,
+                    'num_edges': E,
+                    'vlogv': vlogv
+                })
+            else:
+                s = '{}, |V|: {}, |E|: {}, |V|log|V|: {}'
+                nodes.append(s.format(node.label, V, E, vlogv))
+            for child in node.children[::-1]:
+                stack.append(child)
+        return nodes
+
 
 class PartitionNode(object):
 

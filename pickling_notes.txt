@@ -1,0 +1,9 @@
+For issues with loading pickles, see:
+
+https://stackoverflow.com/questions/2121874/python-pickling-after-changing-a-modules-directory
+
+Specifically (from pickle docs),
+
+    pickle can save and restore class instances transparently, however the class definition must be importable and live in the same module as when the object was stored
+
+

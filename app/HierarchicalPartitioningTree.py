@@ -1,6 +1,7 @@
 import cPickle as pickle
 import graph_tool.all as gt
 import numpy as np
+import Queue
 
 
 class PartitionTree(object):
@@ -33,7 +34,7 @@ class PartitionTree(object):
             pickle.dump(self, f)
 
     @classmethod
-    def collect_indices(root):
+    def collect_indices(cls, root):
         Q = Queue.Queue()
         vlist = set()
         elist = set()
@@ -47,7 +48,7 @@ class PartitionTree(object):
                 Q.put(child)
         assert len(vlist) == root.num_vertices()
         assert len(elist) == root.num_edges()
-        return vlist, elist
+        return list(vlist), list(elist)
 
 
 class PartitionNode(object):
@@ -108,9 +109,22 @@ class PartitionNode(object):
         return len(self.children)
 
     def num_siblings(self):
-        if self.parent is not None:
+        if self.parent is None:
             return 0
         return len(self.parent.children) - 1
+
+    def remove_children(self):
+        if len(self.children) == 0:
+            return
+        assert self.vertex_indices == []
+        assert self.edge_indices == []
+        vlist, elist = PartitionTree.collect_indices(self)
+        self.vertex_indices = vlist
+        self.edge_indices = elst
+        assert len(self.vertex_indices) == self.num_vertices()
+        assert len(self.vertex_edges) == self.num_edges()
+        self.children = []
+
 
     def induce_subgraph(self, G):
         if self.partition_type == 'root':
@@ -119,9 +133,16 @@ class PartitionNode(object):
         G.clear_filters()
         vp = G.new_vp('bool', vals=False)
         ep = G.new_ep('bool', vals=False)
+
+        if self.vertex_indices and self.edge_indices:
+            vlist = self.vertex_indices
+            elist = self.edge_indices
+        else:
+            vlist, elist = PartitionTree.collect_indices(self)
+
         try:
-            vp.a[self.vertex_indices] = True
-            ep.a[self.edge_indices] = True
+            vp.a[vlist] = True
+            ep.a[elist] = True
         except:
             err_msg = 'vertex or edge indices not in G'
             raise IndexError(err_msg)

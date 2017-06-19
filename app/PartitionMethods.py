@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 from subprocess import Popen, PIPE
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
+from networkx.algorithms.flow import edmonds_karp, shortest_augmenting_path
 
 
 def connected_components(G, vertex_indices=None, edge_indices=None):
@@ -271,8 +272,11 @@ def k_connected_components(G, vertex_indices=None, edge_indices=None):
         tar_idx = G.vertex_index[e.target()]
         H.add_edge(src_idx, tar_idx)
     
-    # TODO: Check for graph density and make decision on max-flow algorithm
-    k_components = nx.k_components(H)
+    if G.num_edges() > G.num_vertices() * np.log2(G.num_vertices()):
+        flow_func = shortest_augmenting_path
+    else:
+        flow_func = edmonds_karp
+    k_components = nx.k_components(H, flow_func=flow_func)
     for k, vertex_sets in k_components.iteritems():
         print('k = {} | No. of Components: {}'.format(k, len(vertex_sets)))
         for vs in vertex_sets:

@@ -96,8 +96,10 @@ def node_children():
     node_info = []
     if fully_qualified_label.lower() == 'root':
         for child in Mem.T.root.children:
-            V = len(child.vertex_indices)
-            E = len(child.edge_indices)
+            # V = len(child.vertex_indices)
+            # E = len(child.edge_indices)
+            V = child.num_vertices()
+            E = child.num_edges()
             short_label = child.label.split('|')[-1]
             node_info.append({
                 'fully_qualified_label': child.label,
@@ -110,14 +112,18 @@ def node_children():
 
     # traverse tree
     sub_ids = fully_qualified_label.split('|')
+    if sub_ids[0].lower() == 'root':
+        sub_ids = sub_ids[1:]
     node = Mem.T.root
     for s in xrange(len(sub_ids)):
         idx = int(sub_ids[s].split('_')[-1])
         node = node.children[idx]
 
     for child in node.children:
-        V = len(child.vertex_indices)
-        E = len(child.edge_indices)
+        # V = len(child.vertex_indices)
+        # E = len(child.edge_indices)
+        V = child.num_vertices()
+        E = child.num_edges()
         short_label = child.label.split('|')[-1]
         node_info.append({
             'fully_qualified_label': child.label,
@@ -148,6 +154,8 @@ def decompose_by_operation():
     else:
         # traverse tree
         sub_ids = fully_qualified_label.split('|')
+        if sub_ids[0].lower() == 'root':
+            sub_ids = sub_ids[1:]
         node = Mem.T.root
         for s in xrange(len(sub_ids)):
             idx = int(sub_ids[s].split('_')[-1])
@@ -168,8 +176,10 @@ def decompose_by_operation():
     # single child has same vlist and elist
     if len(children) == 1:
         child = children[0]
-        if (len(child.vertex_indices) == len(vlist) and
-                len(child.edge_indices) == len(elist)):
+        # if (len(child.vertex_indices) == len(vlist) and
+        #         len(child.edge_indices) == len(elist)):
+        if (child.num_vertices() == len(vlist) and 
+                child.num_edges() == len(elist)):
             msg = 'Could not decompose any further using method: {}'
             return jsonify({'msg': msg.format(operation)})
 
@@ -178,8 +188,10 @@ def decompose_by_operation():
     for idx, child in enumerate(node.children):
         child.parent = node
         child.label = child.parent.label + '|' + child.label
-        V = len(child.vertex_indices)
-        E = len(child.edge_indices)
+        # V = len(child.vertex_indices)
+        # E = len(child.edge_indices)
+        V = child.num_vertices()
+        E = child.num_edges()
         short_label = child.label.split('|')[-1]
         node_info.append({
             'fully_qualified_label': child.label + '_' + str(idx),
@@ -207,12 +219,17 @@ def induce_node_subgraph():
     else:
         # traverse tree
         sub_ids = fully_qualified_label.split('|')
+        if sub_ids[0].lower() == 'root':
+            sub_ids = sub_ids[1:]
         node = Mem.T.root
         for s in xrange(len(sub_ids)):
             idx = int(sub_ids[s].split('_')[-1])
             node = node.children[idx]
-        vlist = node.vertex_indices
-        elist = node.edge_indices
+        if node.vertex_indices and node.edge_indices:
+            vlist = node.vertex_indices
+            elist = node.edge_indices
+        else:
+            vlist, elist = PartitionTree.collect_indices(node)
 
     if len(vlist) > 1024:
         return jsonify({'msg': 'Graph is too large to visualize'})

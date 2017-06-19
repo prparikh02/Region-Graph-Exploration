@@ -45,7 +45,7 @@
     td {border: 1px #DDD solid; padding: 5px; cursor: pointer;}
 
     .selected {
-        background-color: rgba(255, 0, 0, 0.5);
+        background-color: gray !important;
         /*color: #FFF;*/
     }
 
@@ -98,50 +98,21 @@
         </div>
     </div>
 
-    <div id="htreeContainer" style="clear: both;">
+    <div id="htreeContainer" style="clear: both; float: left; width: 820px;">
         <h3>Hierarchy Tree</h3>
         <div>
             <button id="toggleHtreeBtn" type="button">Show Table</button>
         </div>
-
         <div class="toggleHtreeContainer">
             <div id="hierarchyTree">
                 <ul id="hierarchyTreeRoot" class="collapsibleList">
                 </ul>
             </div>
-            <div id="treeButtons">
-                <div id="displayGraphButtons">
-                    <div>
-                        <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
-                    </div>
-                    <div>
-                        <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
-                    </div>
-                </div>
-                <br/>
-                
-                <div id="htreeExplorationButtons">
-                    <div>
-                        <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
-                    </div>
-                    <div>
-                        <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
-                    </div>
-                    <div>
-                        <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
-                    </div>
-                    <div>
-                        <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
-                    </div>
-                    <div>
-                        <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
-                    </div>
-                </div>
-            </div>
         </div>
-        <div class="toggleHtreeContainer" style="display: none;">
+        <div id="htreeTableDiv" class="toggleHtreeContainer" style="display: none;">
             <input type="text" id="htreeTableSearch" placeholder="Type row number or percent" />
-            <div class="clusterize">
+            <input type="text" id="htreeTableMinVertices" placeholder="Minimum No. of Vertices" />
+            <div class="clusterize" style="height: 400px;">
                 <div id="htreeTablescrollArea" class="clusterize-scroll">
                     <table id="htreeTable">
                         <thead>
@@ -161,6 +132,37 @@
                 </div>
             </div>
             <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
+        </div>
+    </div>
+      <div style="float: left;">
+        <div id="treeButtons">
+            <div id="displayGraphButtons">
+                <div>
+                    <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
+                </div>
+                <div>
+                    <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
+                </div>
+            </div>
+            <br/>
+            
+            <div id="htreeExplorationButtons">
+                <div>
+                    <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
+                </div>
+                <div>
+                    <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
+                </div>
+                <div>
+                    <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
+                </div>
+                <div>
+                    <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+                </div>
+                <div>
+                    <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -287,6 +289,12 @@
         $(this).addClass('selected');
     });
 
+    $('body').on('click', '#htreeTable tr', function(e) {
+        e.preventDefault();
+        console.log($(this));
+        $(this).addClass('selected').siblings().removeClass('selected');
+    });
+
     $('#getNodeChildrenBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var fullyQualifiedLabel = node.attr('data-value');
@@ -307,7 +315,12 @@
     });
 
     $('#induceNodeSubgraphBtn').on('click', function(e) {
-        var node = $("#hierarchyTree li>span.selected");
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
         var fullyQualifiedLabel = node.attr('data-value');
         $('#induceNodeSubgraphBtn :button').prop('disabled', true);
         $.ajax({
@@ -348,13 +361,14 @@
                 }
 
                 var rows = [],
-                    search = $('#htreeTableSearch')[0];
+                    search = $('#htreeTableSearch')[0]
+                    vfilt = $('#htreeTableMinVertices')[0];
 
                 var colorPicker = function(num_vertices) {
                     var color = 'rgba(0, 0, 0, 0);';
                     num_vertices = parseInt(num_vertices);
                     if (num_vertices >=  65536) {
-                        color = 'rgba(135, 0, 0, 0.9);';
+                        color = 'rgba(135, 0, 0, 0.7);';
                     } else if (num_vertices >= 16384) {
                         color = 'rgba(165, 0, 0, 0.7);';
                     } else if (num_vertices >= 4096) {
@@ -379,7 +393,7 @@
                                  node['num_edges'],
                                  node['vlogv']
                                 ],
-                        markup: '<tr style="background-color: ' + color + '">' +
+                        markup: '<tr style="background-color: ' + color + '" data-value="' + node['label'] + '">' +
                             '<td>' + node['label'] + '</td>' +
                             '<td>' + node['num_vertices'] + '</td>' +
                             '<td>' + node['num_edges'] + '</td>' +
@@ -417,7 +431,23 @@
                     }
                     clusterize.update(filterRows(rows));
                 }
+
+                var onVfilt = function() {
+                    var threshold = parseFloat(vfilt.value);
+                    for (var i = 0; i < rows.length; i++) {
+                        var suitable = false;
+                        var num_vertices = parseInt(rows[i].values[1]);
+                        if (num_vertices > threshold) {
+                            suitable = true;
+                        }
+                        rows[i].active = suitable;
+                    }
+                    clusterize.update(filterRows(rows));
+                }
+
+
                 search.oninput = onSearch;
+                vfilt.oninput = onVfilt;
             },
             complete: function() {
                 $('#htreeTableBtn :button').prop('disabled', false);
@@ -426,28 +456,48 @@
     });
 
     $('#computeNodeConnectedComponentsBtn').on('click', function(e) {
-        var node = $("#hierarchyTree li>span.selected");
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
         var operation = 'connected_components';
         var btn = $('#computeNodeBiconnectedComponentsBtn :button')
         decompose_by_operation(node, operation, btn);
     });
 
     $('#computeNodeBiconnectedComponentsBtn').on('click', function(e) {
-        var node = $("#hierarchyTree li>span.selected");
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
         var operation = 'biconnected_components';
         var btn = $('#computeNodeBiconnectedComponentsBtn :button')
         decompose_by_operation(node, operation, btn);
     });
 
     $('#computeNodeEdgePeelBtn').on('click', function(e) {
-        var node = $("#hierarchyTree li>span.selected");
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
         var operation = 'edge_peel';
         var btn = $('#computeNodeEdgePeelBtn :button')
         decompose_by_operation(node, operation, btn);
     });
 
     $('#computeKConnectedComponentsBtn').on('click', function(e) {
-        var node = $("#hierarchyTree li>span.selected");
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
         var operation = 'k_connected_components';
         var btn = $('#computeKConnectedComponentsBtn :button')
         decompose_by_operation(node, operation, btn);

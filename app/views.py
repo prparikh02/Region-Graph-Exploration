@@ -22,10 +22,10 @@ OPERATIONS = {
     'k_connected_components': k_connected_components
 }
 float_formatter = lambda x: '{:.2f}'.format(x)
-# client = MongoClient('localhost', 27017)
-# db = client['citeseerx']
-# clusters_coll = db['clusters']
-# paper_md_coll = db['paper_metadata']
+client = MongoClient('localhost', 27017)
+db = client['citeseerx']
+clusters_coll = db['clusters']
+paper_md_coll = db['paper_metadata']
 
 
 class Mem:
@@ -178,7 +178,7 @@ def decompose_by_operation():
         child = children[0]
         # if (len(child.vertex_indices) == len(vlist) and
         #         len(child.edge_indices) == len(elist)):
-        if (child.num_vertices() == len(vlist) and 
+        if (child.num_vertices() == len(vlist) and
                 child.num_edges() == len(elist)):
             msg = 'Could not decompose any further using method: {}'
             return jsonify({'msg': msg.format(operation)})
@@ -188,8 +188,6 @@ def decompose_by_operation():
     for idx, child in enumerate(node.children):
         child.parent = node
         child.label = child.parent.label + '|' + child.label
-        # V = len(child.vertex_indices)
-        # E = len(child.edge_indices)
         V = child.num_vertices()
         E = child.num_edges()
         short_label = child.label.split('|')[-1]
@@ -225,13 +223,13 @@ def induce_node_subgraph():
         for s in xrange(len(sub_ids)):
             idx = int(sub_ids[s].split('_')[-1])
             node = node.children[idx]
-        if node.vertex_indices and node.edge_indices:
+        if len(node.vertex_indices) != 0:
             vlist = node.vertex_indices
             elist = node.edge_indices
         else:
             vlist, elist = PartitionTree.collect_indices(node)
 
-    if len(vlist) > 1024:
+    if len(vlist) > 1094:
         return jsonify({'msg': 'Graph is too large to visualize'})
 
     response = induce_subgraph(Mem.gm.g, vlist, elist)
@@ -242,6 +240,27 @@ def induce_node_subgraph():
 def get_hierarchy_tree():
     if Mem.T is None:
         return jsonify({'msg': 'No hierarchy tree loaded'})
-    
+
     nodes = PartitionTree.traverse_dfs(Mem.T.root, return_stats=True)
     return jsonify({'nodes': nodes})
+
+
+@app.route('/doc-lookup')
+def doc_lookup():
+    cluster_id = str(request.args.get('cluster_id'))
+    if not cluster_id:
+        return jsonify({'error_message': 'invalid cluster_id'})
+
+    cursor = clusters_coll.find({'cluster_id': cluster_id})
+    dois = [doc['doi'] for doc in cursor]
+
+    if not dois:
+        return jsonify({'error_message': 'no doi\'s found'})
+
+    cursor = paper_md_coll.find({'doi': {'$in': dois}})
+    results = {}
+    for doc in cursor:
+        doc.pop('_id', None)
+        results[doc['doi']] = doc
+
+    return jsonify(results)

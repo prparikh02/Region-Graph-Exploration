@@ -77,10 +77,10 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
 
     nodes = []
     for v in G.vertices():
-        v_id = G.vp['id'][v]
-        label = v_id
-        # v_id = G.vertex_index[v]
-        # label = G.vp['id'][v]
+        # v_id = G.vp['id'][v]
+        # label = v_id
+        v_id = G.vertex_index[v]
+        label = G.vp['id'][v]
         is_art = G.vp['is_articulation'][v]
         group = 1 if is_art else 0
         title = label
@@ -90,17 +90,20 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
             'label': label,
             'title': title,
             'value': value,
-            'group': group
+            'group': group,
         })
 
     edges = []
     for e in G.edges():
-        src = G.vp['id'][e.source()]
-        tar = G.vp['id'][e.target()]
+        # src = G.vp['id'][e.source()]
+        # tar = G.vp['id'][e.target()]
+        src = G.vertex_index[e.source()]
+        tar = G.vertex_index[e.target()]
         edges.append({
+            'id': G.edge_index[e],
             'from': src,
             'to': tar,
-            'value': 1
+            'value': 1,
         })
 
     return {'nodes': nodes, 'edges': edges}
@@ -126,7 +129,7 @@ def to_vis_json_bcc_tree(G, filename=None):
                 'label': label,
                 'title': title,
                 'value': value,
-                'group': group
+                'group': group,
         })
 
     edges = []
@@ -134,9 +137,10 @@ def to_vis_json_bcc_tree(G, filename=None):
         src = G.vertex_index[e.source()]
         tar = G.vertex_index[e.target()]
         edges.append({
+                'id': G.edge_index[e],
                 'from': src,
                 'to': tar,
-                'value': 1
+                'value': 1,
             })
 
     return {'nodes': nodes, 'edges': edges}

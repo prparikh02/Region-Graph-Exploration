@@ -53,12 +53,14 @@
         float: left;
     }
 
-    /*#nodeInfoContainer {
-        width: 700px;
-        height: 400px;
+    #nodeInfoContainer {
+        width: 450px;
+        height: 500px;
         overflow-y: auto;
         float: left;
-    }*/
+        border: 1px solid lightgray;
+        margin-left: 5px;
+    }
 
 </style>
 
@@ -98,77 +100,80 @@
         </div>
     </div>
 
-    <div id="htreeContainer" style="clear: both; float: left; width: 820px;">
+    <div style="clear: both; float: left;">
         <h3>Hierarchy Tree</h3>
         <div>
             <button id="toggleHtreeBtn" type="button">Show Table</button>
         </div>
-        <div class="toggleHtreeContainer">
-            <div id="hierarchyTree">
-                <ul id="hierarchyTreeRoot" class="collapsibleList">
-                </ul>
-            </div>
-        </div>
-        <div id="htreeTableDiv" class="toggleHtreeContainer" style="display: none;">
-            <input type="text" id="htreeTableSearch" placeholder="Type row number or percent" />
-            <input type="text" id="htreeTableMinVertices" placeholder="Minimum No. of Vertices" />
-            <div class="clusterize" style="height: 400px;">
-                <div id="htreeTablescrollArea" class="clusterize-scroll">
-                    <table id="htreeTable">
-                        <thead>
-                            <tr>
-                                <th>Node Label</th>
-                                <th>|V|</th>
-                                <th>|E|</th>
-                                <th>|V|log|V|</th>
-                            </tr>
-                        </thead>
-                        <tbody id="htreeTableContentArea" class="clusterize-content">
-                            <tr class="clusterize-no-data">
-                                <td>Click below to load hierarchy table</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <div id="htreeContainer" style="float: left; width: 1020px;">
+            <div class="toggleHtreeContainer">
+                <div id="hierarchyTree">
+                    <ul id="hierarchyTreeRoot" class="collapsibleList">
+                    </ul>
                 </div>
             </div>
-            <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
+            <div id="htreeTableDiv" class="toggleHtreeContainer" style="display: none;">
+                <input type="text" id="htreeTableSearch" placeholder="Search box" />
+                <input type="text" id="htreeTableMinVertices" placeholder="Minimum No. of Vertices" />
+                <div class="clusterize" style="height: 400px;">
+                    <div id="htreeTablescrollArea" class="clusterize-scroll">
+                        <table id="htreeTable">
+                            <thead>
+                                <tr>
+                                    <th>Node Label</th>
+                                    <th>|V|</th>
+                                    <th>|E|</th>
+                                    <th>|V|log|V|</th>
+                                    <th>Node Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="htreeTableContentArea" class="clusterize-content">
+                                <tr class="clusterize-no-data">
+                                    <td>Click below to load hierarchy table</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
+            </div>
+        </div>
+        <div style="float: left; margin-left: 5px;">
+            <div id="treeButtons">
+                <div id="displayGraphButtons">
+                    <div>
+                        <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
+                    </div>
+                    <div>
+                        <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
+                    </div>
+                </div>
+                <br/>
+                
+                <div id="htreeExplorationButtons">
+                    <div>
+                        <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
+                    </div>
+                    <div>
+                        <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+                    </div>
+                    <div>
+                        <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
+                    </div>
+                </div>
         </div>
     </div>
-      <div style="float: left;">
-        <div id="treeButtons">
-            <div id="displayGraphButtons">
-                <div>
-                    <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
-                </div>
-                <div>
-                    <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
-                </div>
-            </div>
-            <br/>
-            
-            <div id="htreeExplorationButtons">
-                <div>
-                    <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
-                </div>
-                <div>
-                    <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
-                </div>
-                <div>
-                    <button id="computeNodeBiconnectedComponentsBtn" type="button">Biconnected Components</button>
-                </div>
-                <div>
-                    <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
-                </div>
-                <div>
-                    <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- https://clusterize.js.org/ -->
 
-    <div style="clear: both;">
+    <div style="clear: both; display: none;">
         <h3>BCC Tree Statistics</h3>
         <div id="bccTreeStatistics">
         </div>
@@ -179,18 +184,20 @@
         </div>
     </div>
 
-    <div style="clear: both;">
+    <div style="clear: both; float: left;">
         <div class="canvasContainers">
             <h3>Network</h3>
-            <div id="networkCanvas"></div>
-            <div id="dev-ops"></div>
+            <div style="float: left;">
+                <div id="networkCanvas"></div>
+                <div id="dev-ops"></div>
+            </div>
+            <div id="nodeInfoContainer">
+                <div id="nodeInfo"></div>
+            </div>
         </div>
 
     </div>
 
-    <div>
-        <div id="nodeInfo"></div>
-    </div>
 </body>
 
 <script src="{{url_for('static', filename='js/jquery-3.2.1.min.js')}}"></script>
@@ -391,13 +398,15 @@
                         values: [node['label'],
                                  node['num_vertices'],
                                  node['num_edges'],
-                                 node['vlogv']
+                                 node['vlogv'],
+                                 node['node_type']
                                 ],
                         markup: '<tr style="background-color: ' + color + '" data-value="' + node['label'] + '">' +
                             '<td>' + node['label'] + '</td>' +
                             '<td>' + node['num_vertices'] + '</td>' +
                             '<td>' + node['num_edges'] + '</td>' +
                             '<td>' + node['vlogv'] + '</td>' +
+                            '<td>' + node['node_type'] + '</td>' +
                             '</tr>',
                         active: true
                     });

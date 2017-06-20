@@ -1,5 +1,5 @@
 var network;
-var allNodes;
+var allNodes, allEdges;
 var highlightActive = false;
 
 function redrawAll(container='networkCanvas') {
@@ -83,6 +83,10 @@ function redrawAll(container='networkCanvas') {
         returnType: "Object"
     });
 
+    allEdges = edgesDataset.get({
+        returnType: "Object"
+    });
+
     network.on('click', neighbourhoodHighlight);
     network.on('doubleClick', resolveDoubleClick);
 }
@@ -93,34 +97,16 @@ function resolveDoubleClick(params) {
     if (params.nodes.length == 0) {
         return;
     }
-    console.log(params);
-    var node_id = String(params.nodes[0]).toLowerCase();
-    console.log(node_id);
-    fetch_node_info(node_id);
+    var node_label = allNodes[String(params.nodes[0])].label;
+    fetch_node_info(node_label);
 }
 
-
-// function descend(node_id) {
-//     $.ajax({
-//         type: 'GET',
-//         url: '/graph-view',
-//         data: {
-//             'subgraphName': node_id
-//         },
-//         success: function (data) {
-//             nodesDataset = new vis.DataSet(data['nodes']);
-//             edgesDataset = new vis.DataSet(data['edges']);
-//             redrawAll();
-//         }
-//     });
-// }
-
-function fetch_node_info(node_id) {
+function fetch_node_info(node_label) {
     $.ajax({
         type: 'GET',
         url: '/doc-lookup',
         data: {
-            'cluster_id': node_id
+            'cluster_id': node_label
         },
         success: function (data) {
             console.log(data);
@@ -130,13 +116,13 @@ function fetch_node_info(node_id) {
             }
             renderjson.set_icons('++', '--');
             renderjson.set_show_to_level(2);
+            $('#nodeInfo').empty();
             for (var key in data) {
                 if (!data.hasOwnProperty(key)) {
                     continue;
                 }
                 $('#nodeInfo').append(renderjson(data[key]));
             }
-            // $('#nodeInfo').html(renderjson(data));
         }
     });
 }

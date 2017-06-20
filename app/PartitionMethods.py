@@ -238,6 +238,7 @@ def edge_peel(G, vertex_indices=None, edge_indices=None):
     G.clear_filters()
     return children
 
+
 def k_connected_components(G, vertex_indices=None, edge_indices=None):
     '''
     Partition Type: TBD (kind of vertex and edge, but not really a partition)
@@ -271,7 +272,7 @@ def k_connected_components(G, vertex_indices=None, edge_indices=None):
         src_idx = G.vertex_index[e.source()]
         tar_idx = G.vertex_index[e.target()]
         H.add_edge(src_idx, tar_idx)
-    
+
     if G.num_edges() > G.num_vertices() * np.log2(G.num_vertices()):
         flow_func = shortest_augmenting_path
     else:

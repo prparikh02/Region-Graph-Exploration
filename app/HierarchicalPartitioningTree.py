@@ -62,12 +62,22 @@ class PartitionTree(object):
             V = node.num_vertices()
             E = node.num_edges()
             vlogv = float_formatter(V * np.log2(V))
+            if node.is_leaf():
+                node_type = 'leaf'
+                if PartitionNode.is_rock(node,
+                                         num_vertices_threshold=512,
+                                         check_if_dense=False):
+                    node_type += ',rock'
+            else:
+                node_type = 'intermediate'
+
             if return_stats:
                 nodes.append({
                     'label': node.label,
                     'num_vertices': V,
                     'num_edges': E,
-                    'vlogv': vlogv
+                    'vlogv': vlogv,
+                    'node_type': node_type,
                 })
             else:
                 s = '{}, |V|: {}, |E|: {}, |V|log|V|: {}'
@@ -151,7 +161,6 @@ class PartitionNode(object):
         assert len(self.vertex_edges) == self.num_edges()
         self.children = []
 
-
     def induce_subgraph(self, G):
         if self.partition_type == 'root':
             print('Node is root. Nothing to induce. G unmodified.')
@@ -175,3 +184,21 @@ class PartitionNode(object):
         G.set_vertex_filter(vp)
         G.set_edge_filter(ep)
         print('Vertex and edge filters applied to G')
+
+    @classmethod
+    def is_rock(cls, node, num_vertices_threshold=None, check_if_dense=False):
+        if num_vertices_threshold:
+            if node.num_vertices() < num_vertices_threshold:
+                return False
+        if check_if_dense:
+            V = node.num_vertices()
+            if node.num_edges() < V * np.log2(V):
+                return False
+        if node.num_siblings() == 0:
+            if node.parent is None:
+                return False
+            if node.parent.num_siblings() == 0:
+                if node.parent.parent is None:
+                    return False
+                return node.parent.parent.num_siblings() == 0
+        return False

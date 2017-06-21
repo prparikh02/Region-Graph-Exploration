@@ -3,6 +3,7 @@ import cPickle as pickle
 import graph_tool.all as gt
 import numpy as np
 import os
+from Queue import Queue
 from collections import Counter
 from flask import Flask, jsonify, render_template, request
 from app import app
@@ -31,6 +32,7 @@ paper_md_coll = db['paper_metadata']
 class Mem:
     T = None
     gm = GraphManager(None)
+    current_view = {}
 
 
 @app.route('/')
@@ -232,6 +234,8 @@ def induce_node_subgraph():
     if len(vlist) > 1094:
         return jsonify({'msg': 'Graph is too large to visualize'})
 
+    Mem.current_view['vlist'] = vlist
+    Mem.current_view['elist'] = elist
     response = induce_subgraph(Mem.gm.g, vlist, elist)
     return jsonify(response)
 
@@ -259,8 +263,52 @@ def doc_lookup():
 
     cursor = paper_md_coll.find({'doi': {'$in': dois}})
     results = {}
-    for doc in cursor:
+    # NOTE: Remove [0:1] from cursor to show all results
+    for doc in cursor[0:1]:
         doc.pop('_id', None)
         results[doc['doi']] = doc
 
     return jsonify(results)
+
+@app.route('/bfs-tree')
+def bfs_tree():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+    if not Mem.current_view:
+        return jsonify({'msg': 'Current view not set'})
+
+    # rootNodeID returned is actually vertex index in graph
+    v_idx = int(request.args.get('rootNodeID'))
+    # O(|V|) operation; consider removing
+    assert v_idx in Mem.current_view['vlist']
+    vlist = Mem.current_view['vlist']
+    elist = Mem.current_view['elist']
+
+    G = Mem.gm.g
+    vfilt = G.new_vp('bool', vals=False)
+    vfilt.a[vlist] = True
+    G.set_vertex_filter(vfilt)
+    efilt = G.new_ep('bool', vals=False)
+    efilt.a[elist] = True
+    G.set_edge_filter(efilt)
+
+    N = G.num_vertices()
+    v = G.vertex(v_idx)
+    Q = Queue()
+    Q.put(v)
+    visited = set()
+    visited.add(v)
+    tree_edges = []
+    while Q.qsize() > 0:
+        v = Q.get()
+        if len(visited) == N:
+            break
+        for neighbor in v.out_neighbours():
+            if neighbor in visited:
+                continue
+            visited.add(neighbor)
+            Q.put(neighbor)
+            tree_edges.append(G.edge(v, neighbor))
+    return jsonify({G.edge_index[e]: 1 for e in tree_edges})

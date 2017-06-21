@@ -197,8 +197,12 @@
         </div>
         <div>
             <button id="stopSimulationBtn" type="button">Pause Simulation</button>
+            <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
+            <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
         </div>
-
+        <div>
+            
+        </div>
     </div>
 
 </body>
@@ -292,7 +296,8 @@
         });
     });
 
-    $('#stopSimulationBtn').click(function() {
+    $('#stopSimulationBtn').click(function(e) {
+        e.preventDefault();
         try {
             network.stopSimulation();
         } catch(e) {
@@ -302,6 +307,67 @@
                 // network is not what we think it is
             }
         }
+    });
+
+    $('#highlightBfsTreeBtn').click(function(e) {
+        e.preventDefault();
+        $('#highlightBfsTreeBtn').prop('disabled', true);
+        var selectedNodes = network.getSelectedNodes();
+        if (selectedNodes.length !== 1) {
+            // 0 or more than 1 nodes are selected
+            return;
+        }
+        var rootNodeID = selectedNodes[0];
+        $.ajax({
+            type: 'GET',
+            url: '/bfs-tree',
+            data: {
+                rootNodeID: rootNodeID
+            },
+            success: function(response) {
+                var updateArray = [];
+                for (edgeID in allEdges) {
+                    if (allEdges.hasOwnProperty(edgeID)) {
+                        var edge = allEdges[edgeID];
+                        if (response.hasOwnProperty(edgeID)) {
+                            edge['color'] = {'color': 'red'};
+                            edge['selectionWidth'] = 2;
+                        } else {
+                            edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
+                            edge['selectionWidth'] = undefined;
+                        }
+                        updateArray.push(edge);
+                    }
+                }
+                edgesDataset.update(updateArray);
+
+                updateArray = [];
+                for (nodeID in allNodes) {
+                    var node = allNodes[nodeID];
+                    if (nodeID == rootNodeID) {
+                        node['color'] = undefined;
+                    } else {
+                        node['color'] = 'rgba(200,200,200,0.5)';
+                    }
+                    updateArray.push(node);
+                }
+                nodesDataset.update(updateArray);
+            },
+            complete: function() {
+                $('#highlightBfsTreeBtn').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#toggleEdgesBtn').click(function(e) {
+        e.preventDefault();
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            edge['hidden'] = !edge['hidden'];
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
     });
 
     $('body').on('click', 'span.node', function(e) {

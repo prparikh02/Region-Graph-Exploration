@@ -97,11 +97,12 @@ function resolveDoubleClick(params) {
     if (params.nodes.length == 0) {
         return;
     }
-    var node_label = allNodes[String(params.nodes[0])].label;
-    fetch_node_info(node_label);
+    var node_id = String(params.nodes[0]);
+    fetch_node_info(node_id);
 }
 
-function fetch_node_info(node_label) {
+function fetch_node_info(node_id) {
+    var node_label = allNodes[node_id].label;
     $.ajax({
         type: 'GET',
         url: '/doc-lookup',
@@ -123,6 +124,8 @@ function fetch_node_info(node_label) {
                 }
                 $('#nodeInfo').append(renderjson(data[key]));
             }
+
+            $('#nodeProps').html('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });
 }

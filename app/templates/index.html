@@ -12,6 +12,7 @@
         float: left;
         width: 700px;
         height: 700px;
+        margin-top: 5px;
         border: 1px solid lightgray;
     }
 
@@ -55,11 +56,19 @@
 
     #nodeInfoContainer {
         width: 450px;
-        height: 500px;
+        height: 300px;
         overflow-y: auto;
         float: left;
         border: 1px solid lightgray;
-        margin-left: 5px;
+        margin: 5px;
+    }
+
+    #degreeDistChart {
+        width: 450px;
+        height: 350px;
+        margin: 5px;
+        clear: both;
+        border: 1px solid lightgray;
     }
 
 </style>
@@ -191,17 +200,18 @@
                 <div id="networkCanvas"></div>
                 <div id="dev-ops"></div>
             </div>
-            <div id="nodeInfoContainer">
-                <div id="nodeInfo"></div>
+            <div style="float: left;">
+                <div id="nodeInfoContainer">
+                    <div id="nodeInfo"></div>
+                    <div id="nodeProps"></div>
+                </div>
+                <div id="degreeDistChart"></div>
             </div>
         </div>
         <div>
             <button id="stopSimulationBtn" type="button">Pause Simulation</button>
             <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
             <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
-        </div>
-        <div>
-            
         </div>
     </div>
 
@@ -214,6 +224,8 @@
 <script src="/static/js/renderjson.js"></script>
 <script src="/static/js/CollapsibleLists.js"></script>
 <script src="/static/js/clusterize.min.js"></script>
+<script src="/static/js/highcharts.js"></script>
+<script src="/static/js/exporting.js"></script>
 
 <script>
     $('#loadGraphBtn').on('click', function(e) {
@@ -425,6 +437,7 @@
                 nodesDataset = new vis.DataSet(vis_data['nodes']);
                 edgesDataset = new vis.DataSet(vis_data['edges']);
                 redrawAll('networkCanvas');
+                degree_distribution();
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
@@ -613,6 +626,72 @@
                 btn.prop('disabled', false);
             }
         })
+    }
+
+    function degree_distribution() {
+        var degrees = [];
+        for (nodeID in allNodes) {
+            degrees.push(network.getConnectedNodes(nodeID).length);
+        }
+        degrees.sort();
+
+        var bins = [], counts = [], prev;
+        for (var i = 0; i < degrees.length; i++) {
+            if (degrees[i] !== prev) {
+                bins.push(degrees[i]);
+                counts.push(1);
+            } else {
+                counts[counts.length - 1]++;
+            }
+            prev = degrees[i];
+        }
+        
+        draw_chart(
+            {'x': bins, 'y': counts},
+            {'x': 'degree', 'y': 'count'},
+            'degreeDistChart',
+            'Degree Distribution'
+        );
+    }
+
+    function draw_chart(data, axisText, container, titleText,) {
+        Highcharts.chart(container, {
+            chart: {
+                type: 'column',
+                zoomType: 'x'
+            },
+            title: {
+                text: titleText
+            },
+            xAxis: {
+                categories: data['x'],
+                crosshair: true
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Count'
+                }
+            },
+            tooltip: {
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y}</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: axisText['y'],
+                data: data['y']
+            }]
+        });
     }
 </script>
 

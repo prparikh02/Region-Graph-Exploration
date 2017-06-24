@@ -212,6 +212,7 @@
             <button id="stopSimulationBtn" type="button">Pause Simulation</button>
             <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
             <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
+            <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
         </div>
     </div>
 
@@ -323,12 +324,12 @@
 
     $('#highlightBfsTreeBtn').click(function(e) {
         e.preventDefault();
-        $('#highlightBfsTreeBtn').prop('disabled', true);
         var selectedNodes = network.getSelectedNodes();
         if (selectedNodes.length !== 1) {
             // 0 or more than 1 nodes are selected
             return;
         }
+        $('#highlightBfsTreeBtn').prop('disabled', true);
         var rootNodeID = selectedNodes[0];
         $.ajax({
             type: 'GET',
@@ -377,6 +378,17 @@
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
             edge['hidden'] = !edge['hidden'];
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+    });
+
+    $('#resetEdgeColorsBtn').click(function(e) {
+        e.preventDefault()
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            edge['color'] = {'inherit': 'from'};
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
@@ -633,7 +645,9 @@
         for (nodeID in allNodes) {
             degrees.push(network.getConnectedNodes(nodeID).length);
         }
-        degrees.sort();
+        degrees.sort(function(a, b) {
+            return a - b;  
+        });
 
         var bins = [], counts = [], prev;
         for (var i = 0; i < degrees.length; i++) {
@@ -645,16 +659,16 @@
             }
             prev = degrees[i];
         }
-        
+
         draw_chart(
             {'x': bins, 'y': counts},
-            {'x': 'degree', 'y': 'count'},
+            'degree',
             'degreeDistChart',
             'Degree Distribution'
         );
     }
 
-    function draw_chart(data, axisText, container, titleText,) {
+    function draw_chart(data, seriesText, container, titleText,) {
         Highcharts.chart(container, {
             chart: {
                 type: 'column',
@@ -674,9 +688,9 @@
                 }
             },
             tooltip: {
-                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                headerFormat: '<span style="font-size:10px">{point.y}</span><table>',
                 pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                    '<td style="padding:0"><b>{point.y}</b></td></tr>',
+                    '<td style="padding:0"><b>{point.key}</b></td></tr>',
                 footerFormat: '</table>',
                 shared: true,
                 useHTML: true
@@ -688,7 +702,7 @@
                 }
             },
             series: [{
-                name: axisText['y'],
+                name: seriesText,
                 data: data['y']
             }]
         });

@@ -82,7 +82,8 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
         v_id = G.vertex_index[v]
         label = G.vp['id'][v]
         is_art = G.vp['is_articulation'][v]
-        group = 1 if is_art else 0
+        # group = 1 if is_art else 0
+        group = 1
         title = label
         value = v.out_degree()
         nodes.append({

@@ -93,7 +93,7 @@ function redrawAll(container='networkCanvas') {
 
 
 function resolveDoubleClick(params) {
-
+    console.log(params.nodes);
     if (params.nodes.length == 0) {
         return;
     }

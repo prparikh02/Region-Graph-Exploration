@@ -231,7 +231,7 @@ def induce_node_subgraph():
         else:
             vlist, elist = PartitionTree.collect_indices(node)
 
-    if len(vlist) > 1094:
+    if len(vlist) > 2194:
         return jsonify({'msg': 'Graph is too large to visualize'})
 
     Mem.current_view['vlist'] = vlist

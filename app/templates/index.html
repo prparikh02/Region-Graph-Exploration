@@ -154,6 +154,9 @@
                         <button id="induceNodeSubgraphBtn" type="button">Induce Subgraph</button>
                     </div>
                     <div>
+                        <button id="landmarksBtn" type="button">Landmarks</button>
+                    </div>
+                    <div>
                         <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
                     </div>
                 </div>
@@ -212,6 +215,7 @@
             <button id="stopSimulationBtn" type="button">Pause Simulation</button>
             <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
             <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
+            <button id="highlightSpineBtn" type="button">Highlight Spine</button>
             <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
         </div>
     </div>
@@ -384,11 +388,35 @@
     });
 
     $('#resetEdgeColorsBtn').click(function(e) {
-        e.preventDefault()
+        e.preventDefault();
         var updateArray = [];
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
             edge['color'] = {'inherit': 'from'};
+            edge['width'] = 1;
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+    });
+
+    $('#highlightSpineBtn').click(function(e) {
+        e.preventDefault();
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (!edge.hasOwnProperty('category')) {
+                alert('Edges are not annotated with spine categories.');
+                return;
+            }
+            if (edge['category'] === 'spine') {
+                edge['color'] = 'red';
+                edge['width'] = 15;
+            } else if (edge['category'] === 'branch') {
+                edge['color'] = 'black';
+                edge['width'] = 10;
+            } else {
+                edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
+            }
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
@@ -453,6 +481,38 @@
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#landmarksBtn').click(function(e) {
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
+        var fullyQualifiedLabel = node.attr('data-value');
+        $('#landmarksBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/cluster-by-landmarks',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var vis_data = response['vis_data'];                
+                nodesDataset = new vis.DataSet(vis_data['nodes']);
+                edgesDataset = new vis.DataSet(vis_data['edges']);
+                redrawAll('networkCanvas');
+                degree_distribution();
+            },
+            complete: function() {
+                $('#landmarksBtn :button').prop('disabled', false);
             }
         });
     });
@@ -687,14 +747,14 @@
                     text: 'Count'
                 }
             },
-            tooltip: {
-                headerFormat: '<span style="font-size:10px">{point.y}</span><table>',
-                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                    '<td style="padding:0"><b>{point.key}</b></td></tr>',
-                footerFormat: '</table>',
-                shared: true,
-                useHTML: true
-            },
+            // tooltip: {
+            //     headerFormat: '<span style="font-size:10px">{point.y}</span><table>',
+            //     pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+            //         '<td style="padding:0"><b>{point.key}</b></td></tr>',
+            //     footerFormat: '</table>',
+            //     shared: true,
+            //     useHTML: true
+            // },
             plotOptions: {
                 column: {
                     pointPadding: 0.2,

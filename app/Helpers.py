@@ -1,8 +1,8 @@
 import graph_tool.all as gt
 import json
 import numpy as np
-import pygal
 from collections import Counter
+from subprocess import Popen, PIPE
 
 
 def statistics(G):
@@ -70,6 +70,75 @@ def induce_subgraph(G, vlist, elist):
         }
     }
 
+def print_adjacency_list(G, vlist, elist):
+    vfilt = G.new_vp('bool', vals=False)
+    vfilt.a[vlist] = True
+    G.set_vertex_filter(vfilt)
+    efilt = G.new_ep('bool', vals=False)
+    efilt.a[elist] = True
+    G.set_edge_filter(efilt)
+
+    cmd = './app/spine_clustering.bin'
+    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
+
+    for v in G.vertices():
+        neighbors = [u for u in v.out_neighbours()]
+        # First column for v; following columns are neighbors.
+        # NOTE: Adjacency list is redundant for undirected graphs
+        out_str = ('{} ' +
+                   ('{} ' * len(neighbors))[:-1] +
+                   '\n').format(v, *neighbors)
+        # yield out_str
+        p.stdin.write(out_str)
+        p.stdin.flush()
+    p.stdin.close()
+
+    # get landmarks and clusters
+    landmark_map = {}
+    cluster_assignment = {}
+    while True:
+        line = p.stdout.readline()
+        if line.strip() == '---':
+            break
+        v_idx, prev, nearest_landmark = [int(i) for i in line.strip().split()]
+        if nearest_landmark == -1:
+            landmark_map[v_idx] = len(landmark_map)
+            cluster_assignment[v_idx] = v_idx
+        else:
+            cluster_assignment[v_idx] = nearest_landmark
+    cluster_assignment = \
+        {k: landmark_map[v] for k, v in cluster_assignment.iteritems()}
+    print cluster_assignment
+    print landmark_map
+
+    # get spine
+    tree = []
+    while True:
+        line = p.stdout.readline()
+        if line == '':
+            break
+        v_idxs = line.strip().split()
+        branch = []
+        for i in xrange(len(v_idxs) - 1):
+            branch.append(G.edge(v_idxs[i], v_idxs[i + 1]))
+        tree.append(branch)
+    
+    spine = set(tree[0])
+    branches = set()
+    for branch in tree[1:]:
+        branches.update(branch)
+    print spine
+    print branches
+
+    vis_data = to_vis_json_cluster_map(G,
+                                       cluster_assignment,
+                                       landmark_map,
+                                       spine,
+                                       branches)
+    return {
+        'vis_data': vis_data
+    }
+
 
 def to_vis_json(G, is_bcc_tree=False, filename=None):
     if is_bcc_tree:
@@ -81,7 +150,7 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
         # label = v_id
         v_id = G.vertex_index[v]
         label = G.vp['id'][v]
-        is_art = G.vp['is_articulation'][v]
+        # is_art = G.vp['is_articulation'][v]
         # group = 1 if is_art else 0
         group = 1
         title = label
@@ -104,7 +173,7 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
             'id': G.edge_index[e],
             'from': src,
             'to': tar,
-            'value': 1,
+            # 'value': 1,
         })
 
     return {'nodes': nodes, 'edges': edges}
@@ -141,7 +210,50 @@ def to_vis_json_bcc_tree(G, filename=None):
                 'id': G.edge_index[e],
                 'from': src,
                 'to': tar,
-                'value': 1,
+                # 'value': 1,
             })
+
+    return {'nodes': nodes, 'edges': edges}
+
+
+def to_vis_json_cluster_map(G,
+                            cluster_assignment,
+                            landmark_map,
+                            spine,
+                            branches):
+    nodes = []
+    for v in G.vertices():
+        v_id = G.vertex_index[v]
+        label = G.vp['id'][v]
+        title = label
+        value = v.out_degree()
+        group = cluster_assignment[v_id]
+        shape = 'star' if v_id in landmark_map else 'dot'
+        nodes.append({
+            'id': v_id,
+            'label': label,
+            'title': title,
+            'value': value,
+            'group': group,
+            'shape': shape,
+        })
+
+    edges = []
+    for e in G.edges():
+        src = G.vertex_index[e.source()]
+        tar = G.vertex_index[e.target()]
+        if e in spine:
+            category = 'spine'
+        elif e in branches:
+            category = 'branch'
+        else:
+            category = 'none'
+        edges.append({
+            'id': G.edge_index[e],
+            'from': src,
+            'to': tar,
+            'category': category,
+            # 'value': 1,
+        })
 
     return {'nodes': nodes, 'edges': edges}

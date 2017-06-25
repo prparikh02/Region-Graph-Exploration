@@ -8,11 +8,10 @@ from collections import Counter
 from flask import Flask, jsonify, render_template, request
 from app import app
 from GraphManager import GraphManager
-from Helpers import statistics, to_vis_json, induce_subgraph
+from Helpers import *
 from pymongo import MongoClient
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
-from PartitionMethods import connected_components, biconnected_components, \
-                             edge_peel, k_connected_components
+from PartitionMethods import *
 
 GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
@@ -213,30 +212,34 @@ def induce_node_subgraph():
         return jsonify({'msg': 'No graph loaded'})
 
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
-    if fully_qualified_label.lower() == 'root':
-        vlist = Mem.T.root.vertex_indices
-        elist = Mem.T.root.edge_indices
-    else:
-        # traverse tree
-        sub_ids = fully_qualified_label.split('|')
-        if sub_ids[0].lower() == 'root':
-            sub_ids = sub_ids[1:]
-        node = Mem.T.root
-        for s in xrange(len(sub_ids)):
-            idx = int(sub_ids[s].split('_')[-1])
-            node = node.children[idx]
-        if len(node.vertex_indices) != 0:
-            vlist = node.vertex_indices
-            elist = node.edge_indices
-        else:
-            vlist, elist = PartitionTree.collect_indices(node)
-
+    vlist, elist = get_indices(fully_qualified_label)
     if len(vlist) > 2194:
         return jsonify({'msg': 'Graph is too large to visualize'})
 
     Mem.current_view['vlist'] = vlist
     Mem.current_view['elist'] = elist
     response = induce_subgraph(Mem.gm.g, vlist, elist)
+    return jsonify(response)
+
+
+@app.route('/cluster-by-landmarks')
+def cluster_by_landmarks():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+    # if not Mem.current_view:
+    #     return jsonify({'msg': 'Current view not set'})
+    
+    fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    vlist, elist = get_indices(fully_qualified_label)
+    if len(vlist) > 2194:
+        return jsonify({'msg': 'Graph is too large to visualize'})
+
+    Mem.current_view['vlist'] = vlist
+    Mem.current_view['elist'] = elist
+
+    response = print_adjacency_list(Mem.gm.g, vlist, elist)
     return jsonify(response)
 
 
@@ -269,6 +272,7 @@ def doc_lookup():
         results[doc['doi']] = doc
 
     return jsonify(results)
+
 
 @app.route('/bfs-tree')
 def bfs_tree():
@@ -312,3 +316,25 @@ def bfs_tree():
             Q.put(neighbor)
             tree_edges.append(G.edge(v, neighbor))
     return jsonify({G.edge_index[e]: 1 for e in tree_edges})
+
+
+def get_indices(fully_qualified_label):
+    if fully_qualified_label.lower() == 'root':
+        vlist = Mem.T.root.vertex_indices
+        elist = Mem.T.root.edge_indices
+    else:
+        # traverse tree
+        sub_ids = fully_qualified_label.split('|')
+        if sub_ids[0].lower() == 'root':
+            sub_ids = sub_ids[1:]
+        node = Mem.T.root
+        for s in xrange(len(sub_ids)):
+            idx = int(sub_ids[s].split('_')[-1])
+            node = node.children[idx]
+        if len(node.vertex_indices) != 0:
+            vlist = node.vertex_indices
+            elist = node.edge_indices
+        else:
+            vlist, elist = PartitionTree.collect_indices(node)
+
+    return vlist, elist

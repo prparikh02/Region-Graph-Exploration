@@ -28,7 +28,7 @@ function redrawAll(container='networkCanvas') {
                 min: 0.1,
                 max: 5
             },
-            width: 0.15,
+            width: 1.0,
             color: {
                 inherit: 'from'
             },

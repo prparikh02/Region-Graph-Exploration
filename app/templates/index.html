@@ -71,6 +71,24 @@
         border: 1px solid lightgray;
     }
 
+    #landmarksTableContainer {
+        width: 450px;
+        height: 350px;
+        margin: 5px;
+        border: 1px solid lightgray;
+        float: left;
+        overflow: auto;
+    }
+
+    #clustersTableContainer {
+        width: 450px;
+        height: 350px;
+        margin: 5px;
+        border: 1px solid lightgray;
+        float: left;
+        overflow: auto;
+    }
+
 </style>
 
 <body>
@@ -217,6 +235,43 @@
             <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
             <button id="highlightSpineBtn" type="button">Highlight Spine</button>
             <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
+        </div>
+    </div>
+
+    <div id="clusterDescriptions" style="display: none;">
+        <div id="landmarksTableContainer">
+            <table id="landmarksTable" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th>Landmark ID</th>
+                        <th>Vertex Label</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="landmarksTableContentArea" class="clusterize-content">
+                    <tr class="clusterize-no-data">
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="clustersTableContainer">
+            <table id="clustersTable" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th>Vertex Label</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody id="clustersTableContentArea" class="clusterize-content">
+                    <tr class="clusterize-no-data">
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="clear: both;">
+            <button id="getIntraClusterDescriptionsBtn" type="button">Get Intra-cluster Descriptions</button>
         </div>
     </div>
 
@@ -434,6 +489,15 @@
         $(this).addClass('selected').siblings().removeClass('selected');
     });
 
+    $('body').on('click', '#landmarksTable tr', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+        } else {
+            $(this).addClass('selected').siblings().removeClass('selected');
+        }
+    });
+
     $('#getNodeChildrenBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var fullyQualifiedLabel = node.attr('data-value');
@@ -460,6 +524,9 @@
         } else {
             node = $('#htreeTableDiv tr.selected');
         }
+        $('#clustersTableContentArea').empty();
+        $('#landmarksTableContentArea').empty();
+
         var fullyQualifiedLabel = node.attr('data-value');
         $('#induceNodeSubgraphBtn :button').prop('disabled', true);
         $.ajax({
@@ -492,6 +559,9 @@
         } else {
             node = $('#htreeTableDiv tr.selected');
         }
+        $('#clustersTableContentArea').empty();
+        $('#landmarksTableContentArea').empty();
+
         var fullyQualifiedLabel = node.attr('data-value');
         $('#landmarksBtn :button').prop('disabled', true);
         $.ajax({
@@ -505,15 +575,71 @@
                     alert(response['msg']);
                     return;
                 }
-                var vis_data = response['vis_data'];                
+                var vis_data = response['vis_data'];
                 nodesDataset = new vis.DataSet(vis_data['nodes']);
                 edgesDataset = new vis.DataSet(vis_data['edges']);
-                redrawAll('networkCanvas');
+
+                if (vis_data['nodes'].length > 2200) {
+                    alert('Graph is too large to visualize');
+                } else {
+                    redrawAll('networkCanvas');
+                }
                 degree_distribution();
+                summarize_clusters();
             },
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
+                $('#clusterDescriptions').show();
             }
+        });
+    });
+
+    $('#getIntraClusterDescriptionsBtn').click(function(e) {
+        // var nodeID = $('#landmarksTable tr.selected').attr('data-value');
+        var groupID = parseInt($('#landmarksTable tr.selected td:nth-child(1)').text());
+        var networkGroups = network['groups']['groups'];
+        var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);
+        var rgbColorString = "rgba(" + rgbColor['r'] + ", " + 
+                                        rgbColor['g'] + ", " + 
+                                        rgbColor['b'] + ", " +
+                                        0.50 + ");";
+
+        var intraClusterNodes = [];
+        for (nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            if (node['group'] == groupID) {
+                intraClusterNodes.push({
+                    'id': node['id'],
+                    'label': node['label']
+                })
+            }
+        }
+        
+        $.ajax({
+            type: 'GET',
+            url: '/get-intracluster-summary',
+            data: {
+                nodes: JSON.stringify(intraClusterNodes)
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('summary')) {
+                    console.log(response['summary']);
+                }
+                var rows = [];
+                for (icNode in intraClusterNodes) {
+                    var node = intraClusterNodes[icNode];
+                    rows.push('<tr style="background-color: ' + rgbColorString + '" data-value="' + node['id'] + '">' +
+                                '<td>' + node['label'] + '</td>' +
+                                '<td>' + response['nodes'][node['label']] + '</td>' +
+                                '</tr>');
+                }
+                var clusterize = new Clusterize({
+                    rows: rows,
+                    scrollId: 'clustersTableContainer',
+                    contentId: 'clustersTableContentArea'
+                });
+            },
+            complete: function() { }
         });
     });
 
@@ -747,14 +873,6 @@
                     text: 'Count'
                 }
             },
-            // tooltip: {
-            //     headerFormat: '<span style="font-size:10px">{point.y}</span><table>',
-            //     pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-            //         '<td style="padding:0"><b>{point.key}</b></td></tr>',
-            //     footerFormat: '</table>',
-            //     shared: true,
-            //     useHTML: true
-            // },
             plotOptions: {
                 column: {
                     pointPadding: 0.2,
@@ -766,6 +884,80 @@
                 data: data['y']
             }]
         });
+    }
+
+    function summarize_clusters() {
+        var networkGroups = network['groups']['groups'];
+        var clusters = {};
+        for (nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            var group = node['group'];
+            if (!clusters.hasOwnProperty(group)) {
+                clusters[group] = {};
+                clusters[group]['nodes'] = [];
+                clusters[group]['landmark'] = '';
+            }
+            clusters[group]['nodes'].push({
+                'id': node['id'],
+                'label': node['label']
+            });
+            // NOTE: shape == star denotes landmark
+            if (node['shape'] === 'star') {
+                clusters[group]['landmark'] = {
+                    'id': node['id'],
+                    'label': node['label']
+                }
+            }
+        }
+        $.ajax({
+            type: 'GET',
+            url: '/summarize-clusters',
+            data: {
+                clusters: JSON.stringify(clusters)
+            },
+            success: function(response) {
+                var rows = [];
+                for (groupID in clusters) {
+                    var landmarkLabel = clusters[groupID]['landmark']['label'];
+                    var landmarkID = clusters[groupID]['landmark']['id'];
+                    var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);
+                    var rgbColorString = "rgba(" + rgbColor['r'] + ", " + 
+                                                   rgbColor['g'] + ", " + 
+                                                   rgbColor['b'] + ", " +
+                                                   0.50 + ");";
+                    rows.push('<tr style="background-color: ' + rgbColorString + '" data-value="' + landmarkID + '">' +
+                                '<td>' + groupID + '</td>' +
+                                '<td>' + landmarkLabel + '</td>' +
+                                '<td>' + response[landmarkLabel] + '</td>' +
+                                '</tr>');
+                }
+
+                var clusterize = new Clusterize({
+                    rows: rows,
+                    scrollId: 'landmarksTableContainer',
+                    contentId: 'landmarksTableContentArea'
+                });
+            },
+            complete: function() { }
+        });
+    }
+
+    /*
+    source: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+    */
+    function hexToRgb(hex) {
+        // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+            return r + r + g + g + b + b;
+        });
+
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
     }
 </script>
 

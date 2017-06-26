@@ -1,12 +1,13 @@
 import cPickle as pickle
-# import copy
 import graph_tool.all as gt
+import json
 import numpy as np
 import os
 from Queue import Queue
 from collections import Counter
 from flask import Flask, jsonify, render_template, request
 from app import app
+from gensim.summarization import summarize
 from GraphManager import GraphManager
 from Helpers import *
 from pymongo import MongoClient
@@ -228,18 +229,79 @@ def cluster_by_landmarks():
         return jsonify({'msg': 'No hierarchy tree loaded'})
     if Mem.gm.g is None:
         return jsonify({'msg': 'No graph loaded'})
-    # if not Mem.current_view:
-    #     return jsonify({'msg': 'Current view not set'})
     
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
-    if len(vlist) > 2194:
-        return jsonify({'msg': 'Graph is too large to visualize'})
+    # NOTE: handled on front end
+    # if len(vlist) > 2194:
+    #     return jsonify({'msg': 'Graph is too large to visualize'})
 
     Mem.current_view['vlist'] = vlist
     Mem.current_view['elist'] = elist
 
     response = print_adjacency_list(Mem.gm.g, vlist, elist)
+    return jsonify(response)
+
+
+@app.route('/summarize-clusters')
+def summarize_clusters():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+
+    clusters = json.loads(request.args.get('clusters'))
+    response = {}
+    # NOTE: clusters not to be confused with clusters in citeseerx database
+    for group_id in clusters:
+        landmark = clusters[group_id]['landmark']
+        cluster_id = landmark['label']
+
+        cursor = clusters_coll.find({'cluster_id': cluster_id})
+        dois = [doc['doi'] for doc in cursor]
+        if not dois:
+            response[cluster_id] = ''
+            continue
+
+        cursor = paper_md_coll.find({'doi': {'$in': dois}})
+        # NOTE: Remove [0:1] from cursor to show all results
+        for doc in cursor[0:1]:
+            response[cluster_id] = doc['title']
+
+    return jsonify(response)
+
+
+# TODO: Consolidate with summarize_clusters function above
+@app.route('/get-intracluster-summary')
+def get_intracluster_summary():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+
+    nodes = json.loads(request.args.get('nodes'))
+    
+    response = {'nodes': {}}
+    for node in nodes:
+        cluster_id = node['label']
+
+        cursor = clusters_coll.find({'cluster_id': cluster_id})
+        dois = [doc['doi'] for doc in cursor]
+        if not dois:
+            result[cluster_id] = ''
+            continue
+
+        cursor = paper_md_coll.find({'doi': {'$in': dois}})
+        # NOTE: Remove [0:1] from cursor to show all results
+        for doc in cursor[0:1]:
+            response['nodes'][cluster_id] = doc['title']
+
+    try:
+        text_list = [response['nodes'][label] for label in response['nodes']]
+        summary = summarize('. '.join(text_list))
+        response['summary'] = summary
+    except TypeError:
+        print 'couldn\'t produce summary...'
     return jsonify(response)
 
 

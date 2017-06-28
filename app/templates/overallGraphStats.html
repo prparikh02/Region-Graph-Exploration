@@ -1,8 +1,39 @@
 <style>
     #numericalStatistics {
         width: 400px;
-        margin: 10px;
+        height: 200px;
+        margin: 5px;
         overflow: auto;
+        float: left;
+    }
+
+    #chartsContainer {
+        margin: 5px;
+        float: left;
+    }
+
+    #overallDegreeDistributionChart {
+        width: 400px;
+        height: 200px;
+        border: 1px solid lightgray;
+        float: left;
+        margin: 5px;
+    }
+
+    #overallCCSizeDistributionChart {
+        width: 400px;
+        height: 200px;
+        border: 1px solid lightgray;
+        float: left;
+        margin: 5px;
+    }
+
+    #overallPeelValueDistributionChart {
+        width: 400px;
+        height: 200px;
+        border: 1px solid lightgray;
+        float: left;
+        margin: 5px;
     }
 
     td {border: 1px #DDD solid; padding: 5px; cursor: pointer;}
@@ -11,30 +42,79 @@
         background-color: brown;
         color: #FFF;
     }
+
+    .chartsSubContainer {
+        float: left;
+    }
 </style>
 
-<div id="numericalStatistics" align="left">
-    <table>
-        <tr>
-            <td>Vertices</td>
-            <td>{{ num_vertices }}</td>
-        </tr>
-        <tr>
-            <td>Edges</td>
-            <td>{{ num_edges }}</td>
-        </tr>
-        <tr>
-            <td>Connected Components</td>
-            <td>{{ num_cc }}</td>
-        </tr>
-        <tr>
-            <td>Isolated Vertices</td>
-            <td>{{ num_singletons }}</td>
-        </tr>
-    </table>
+<div id="chartsContainer">
+    <div class="chartsSubContainer">
+        <div id="numericalStatistics">
+            <table>
+                <tr>
+                    <td>Vertices</td>
+                    <td>{{ num_vertices }}</td>
+                </tr>
+                <tr>
+                    <td>Edges</td>
+                    <td>{{ num_edges }}</td>
+                </tr>
+                <tr>
+                    <td>Connected Components</td>
+                    <td>{{ num_cc }}</td>
+                </tr>
+                <tr>
+                    <td>Isolated Vertices</td>
+                    <td>{{ num_singletons }}</td>
+                </tr>
+                <tr>
+                    <td>|V|log|V|</td>
+                    <td>{{ vlogv }}</td>
+                </tr>
+            </table>
+        </div>
+        <div id="overallPeelValueDistributionChart"></div>
+    </div>
+    <div class="chartsSubContainer">
+        <div id="overallDegreeDistributionChart"></div>
+        <div id="overallCCSizeDistributionChart"></div>
+    </div>
 </div>
 
+
 <script>
+    $(document).ready(function() {
+        var degreeBins = {{ deg_bins }},
+            degreeCounts = {{ deg_counts }},
+            ccBins = {{ cc_sizes }},
+            ccCounts = {{ cc_counts }},
+            peelBins = {{ peel_bins }},
+            peelCounts = {{ peel_counts }};
+
+        drawChart(
+            {'x': degreeBins, 'y': degreeCounts},
+            'Vertices',
+            'overallDegreeDistributionChart',
+            'Degree Distribution'
+        );
+        
+        drawChart(
+            {'x': ccBins, 'y': ccCounts},
+            'Count',
+            'overallCCSizeDistributionChart',
+            'Connected Component Size Distribution'
+        );
+        
+        drawChart(
+            {'x': peelBins, 'y': peelCounts},
+            'Count',
+            'overallPeelValueDistributionChart',
+            'Peel Value Distribution'
+        );
+
+    });
+
     $('#numericalStatistics tr').click(function() {
         $(this).addClass('selected').siblings().removeClass('selected');
     });

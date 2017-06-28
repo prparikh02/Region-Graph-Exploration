@@ -5,7 +5,7 @@ var highlightActive = false;
 var MIN_NODE_SIZE = 30,
     MAX_NODE_SIZE = 100
     MIN_EDGE_WIDTH = 1,
-    MAX_EDGE_WIDTH = 20;
+    MAX_EDGE_WIDTH = 25;
 
 function redrawAll(container='networkCanvas') {
 
@@ -77,7 +77,8 @@ function redrawAll(container='networkCanvas') {
         },
         interaction: {
             tooltipDelay: 200,
-            hideEdgesOnDrag: true
+            hideEdgesOnDrag: true,
+            hover: true
         }
         // },
         // configure: {
@@ -108,8 +109,8 @@ function redrawAll(container='networkCanvas') {
 
     network.on('click', neighbourhoodHighlight);
     network.on('doubleClick', resolveDoubleClick);
+    network.on('hoverNode', resolveHoverNode);
 }
-
 
 function resolveDoubleClick(params) {
     console.log(params.nodes);
@@ -118,6 +119,43 @@ function resolveDoubleClick(params) {
     }
     var node_id = String(params.nodes[0]);
     fetch_node_info(node_id);
+}
+
+function resolveHoverNode(params) {
+    var selectedNodeID = params['node'];
+    var selectedNode = allNodes[selectedNodeID];
+    if (!selectedNode.hasOwnProperty('shape')) {
+        return;
+    }
+    var group;
+    if (selectedNode['shape'] === 'star') {
+        group = selectedNode['group'];
+    } else {
+        return;
+    }
+
+    if (highlightActive === true) {
+        for (var nodeId in allNodes) {
+            allNodes[nodeId].color = undefined;
+            if (allNodes[nodeId].hiddenLabel !== undefined) {
+                allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                allNodes[nodeId].hiddenLabel = undefined;
+            }
+        }
+        highlightActive = false;
+        return;
+    }
+
+    var updateArray = [];
+    for (nodeID in allNodes) {
+        var node = allNodes[nodeID];
+        if (node['group'] !== group) {
+            node['color'] = 'rgba(200,200,200,0.5)';
+        }
+        updateArray.push(node);
+    }
+    nodesDataset.update(updateArray);
+    highlightActive = true;
 }
 
 function fetch_node_info(node_id) {

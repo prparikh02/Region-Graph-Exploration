@@ -8,14 +8,16 @@ from subprocess import Popen, PIPE
 def statistics(G):
     if not G:
         return 'No Graph Loaded'
+    float_formatter = lambda x: '{:.2f}'.format(x)
+
+    if G.get_vertex_filter()[0] is not None:
+        vfilt = G.get_vertex_filter()[0]
+        v_idx = np.where(vfilt.a == 1)[0]
+    else:
+        v_idx = np.arange(G.num_vertices())
+
     deg_counts, deg_bins = gt.vertex_hist(G, 'out', float_count=False)
-    n = len(deg_counts)
-    # vertex_hist = filter(lambda x: x[1] != 0, zip(deg_bins[:-1], deg_counts))
     incl_idx = np.where(deg_counts != 0)[0]
-    # vertex_hist = {
-    #     'degrees': deg_bins[incl_idx],
-    #     'counts': deg_counts[incl_idx]
-    # }
     deg_bins = list(deg_bins[incl_idx])
     deg_counts = list(deg_counts[incl_idx])
 
@@ -25,24 +27,30 @@ def statistics(G):
     cc_counts = [csc[1] for csc in cc_size_counts]
 
     num_cc = len(np.unique(comp.a))
-    # TODO: number of isolated vertices
-    num_singletons = 0
-    # if vertex_hist['degrees'][0] == 0:
-    #     num_singletons = vertex_hist['counts'][0]
     if deg_bins[0] == 0:
         num_singletons = deg_counts[0]
+    else:
+        num_singletons = 0
+
+    # TODO: Replace this with C++ peel implementation
+    kcore = gt.kcore_decomposition(G)
+    C = Counter(kcore.a[v_idx])
+    peel_bins, peel_counts = [list(t) for t in zip(*C.items())]
+
+    vlogv = G.num_vertices() * np.log2(G.num_vertices())
 
     return {
         'num_vertices': G.num_vertices(),
         'num_edges': G.num_edges(),
         'num_cc': num_cc,
         'num_singletons': num_singletons,
+        'vlogv': float_formatter(vlogv),
         'deg_bins': deg_bins,
         'deg_counts': deg_counts,
         'cc_sizes': cc_sizes,
-        'cc_counts': cc_counts
-        # 'vertex_hist': vertex_hist,
-        # 'cc_hist': cc_size_counts
+        'cc_counts': cc_counts,
+        'peel_bins': peel_bins,
+        'peel_counts': peel_counts,
     }
 
 

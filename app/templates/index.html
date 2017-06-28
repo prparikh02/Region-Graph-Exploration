@@ -73,7 +73,15 @@
 
     #degreeDistChart {
         width: 450px;
-        height: 350px;
+        height: 300px;
+        margin: 5px;
+        clear: both;
+        border: 1px solid lightgray;
+    }
+
+    #additionalInfoDiv {
+        width: 450px;
+        height: 80px;
         margin: 5px;
         clear: both;
         border: 1px solid lightgray;
@@ -113,12 +121,12 @@
         <button id="loadGraphBtn" type="button">Load Graph</button>
     </div>
 
-    <div>
+    <div style="clear: both;">
         <h3>Overall Statistics</h3>
         <div id="graphStatistics"></div>
     </div>
 
-    <div>
+    <div style="clear: both;">
         <div style="float: left; margin-right: 20px;">
             <h3>Available Hierarchy Trees</h3>
             <select id="treeSelect">
@@ -250,6 +258,7 @@
                     <div id="nodeProps"></div>
                 </div>
                 <div id="degreeDistChart"></div>
+                <div id="additionalInfoDiv"></div>
             </div>
         </div>
     </div>
@@ -472,6 +481,7 @@
 
     $('#highlightSpineBtn').click(function(e) {
         e.preventDefault();
+        var spineLength = 0;
         var updateArray = [];
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
@@ -482,6 +492,7 @@
             if (edge['category'] === 'spine') {
                 edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
                 edge['width'] = MAX_EDGE_WIDTH;
+                spineLength++;
             } else if (edge['category'] === 'branch') {
                 edge['color'] = {'color': 'rgba(0,0,0,1.0)'};
                 edge['width'] = Math.round(0.75 * MAX_EDGE_WIDTH);
@@ -493,6 +504,7 @@
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
+        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
     });
 
     $('body').on('click', 'span.node', function(e) {
@@ -582,7 +594,7 @@
                 nodesDataset = new vis.DataSet(vis_data['nodes']);
                 edgesDataset = new vis.DataSet(vis_data['edges']);
                 redrawAll('networkCanvas');
-                degree_distribution();
+                degreeDistribution();
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
@@ -624,8 +636,8 @@
                 } else {
                     redrawAll('networkCanvas');
                 }
-                degree_distribution();
-                summarize_clusters();
+                degreeDistribution();
+                summarizeClusters();
             },
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
@@ -878,7 +890,7 @@
         })
     }
 
-    function degree_distribution() {
+    function degreeDistribution() {
         var degrees = [];
         for (nodeID in allNodes) {
             degrees.push(network.getConnectedNodes(nodeID).length);
@@ -898,15 +910,15 @@
             prev = degrees[i];
         }
 
-        draw_chart(
+        drawChart(
             {'x': bins, 'y': counts},
-            'degree',
+            'Vertices',
             'degreeDistChart',
             'Degree Distribution'
         );
     }
 
-    function draw_chart(data, seriesText, container, titleText,) {
+    function drawChart(data, seriesText, container, titleText,) {
         Highcharts.chart(container, {
             chart: {
                 type: 'column',
@@ -938,7 +950,7 @@
         });
     }
 
-    function summarize_clusters() {
+    function summarizeClusters() {
         var networkGroups = network['groups']['groups'];
         var clusters = {};
         for (nodeID in allNodes) {

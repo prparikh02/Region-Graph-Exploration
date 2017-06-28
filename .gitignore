@@ -2,3 +2,4 @@
 app/data/graphs/*
 app/data/trees/*
 .ipynb_checkpoints/
+scripts/

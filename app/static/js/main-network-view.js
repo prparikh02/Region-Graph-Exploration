@@ -156,6 +156,7 @@ function resolveHoverNode(params) {
     }
     nodesDataset.update(updateArray);
     highlightActive = true;
+    network.stopSimulation();
 }
 
 function fetch_node_info(node_id) {

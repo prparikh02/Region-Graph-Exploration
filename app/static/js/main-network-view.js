@@ -1,16 +1,39 @@
 var network;
 var allNodes, allEdges;
 var highlightActive = false;
+// It is required that MIN_NODE_SIZE < 0.80 * MAX_NODE_SIZE
+var MIN_NODE_SIZE = 30,
+    MAX_NODE_SIZE = 100
+    MIN_EDGE_WIDTH = 1,
+    MAX_EDGE_WIDTH = 20;
 
 function redrawAll(container='networkCanvas') {
 
     var container = document.getElementById(container);
+    var data = {
+        nodes: nodesDataset,
+        edges: edgesDataset
+    }
+
+    var numNodes = nodesDataset.length;
+    var min_node_size = MIN_NODE_SIZE,
+        max_node_size = MAX_NODE_SIZE;
+
+    // for small graphs
+    if (numNodes < 0.50 * MAX_NODE_SIZE) {
+        min_node_size = Math.round(0.50 * MIN_NODE_SIZE);
+        max_node_size = Math.round(0.50 * MAX_NODE_SIZE);
+    } else if (numNodes < 0.25 * MAX_NODE_SIZE) {
+        min_node_size = Math.round(0.25 * MIN_NODE_SIZE);
+        max_node_size = Math.round(0.25 * MAX_NODE_SIZE);
+    }
+
     var options = {
         nodes: {
             shape: 'dot',
             scaling: {
-                min: 10,
-                max: 30,
+                min: min_node_size,
+                max: max_node_size,
                 label: {
                     min: 8,
                     max: 30,
@@ -25,10 +48,10 @@ function redrawAll(container='networkCanvas') {
         },
         edges: {
             scaling: {
-                min: 0.1,
-                max: 5
+                min: MIN_EDGE_WIDTH,
+                max: MAX_EDGE_WIDTH
             },
-            width: 1.0,
+            // width: 1.0,
             color: {
                 inherit: 'from'
             },
@@ -71,12 +94,6 @@ function redrawAll(container='networkCanvas') {
         //     container: document.getElementById('dev-ops')
         // }
     };
-    var data = {
-        nodes: nodesDataset,
-        edges: edgesDataset
-    } // Note: data is coming from ./datasources/WorldCup2014.js
-
-    network = new vis.Network(container, data, options);
 
     // get a JSON object
     allNodes = nodesDataset.get({
@@ -86,6 +103,8 @@ function redrawAll(container='networkCanvas') {
     allEdges = edgesDataset.get({
         returnType: "Object"
     });
+
+    network = new vis.Network(container, data, options);
 
     network.on('click', neighbourhoodHighlight);
     network.on('doubleClick', resolveDoubleClick);
@@ -128,6 +147,38 @@ function fetch_node_info(node_id) {
             $('#nodeProps').html('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });
+}
+
+function remapNodeSizes(nodes) {
+    var old_max = Number.MIN_SAFE_INTEGER,
+        old_min = Number.MAX_SAFE_INTEGER;
+
+    for (nodeID in nodes) {
+        var node = nodes[nodeID];
+        if (node['value'] >= old_max) {
+            old_max = node['value'];
+        }
+        if (node['value'] <= old_min) {
+            old_min = node['value'];
+        }
+    }
+
+    var new_max = MAX_NODE_SIZE;
+    var new_min = MIN_NODE_SIZE;
+
+    var scaleFactor = (Math.round(0.80 * new_max) - new_min) / (old_max - old_min);
+    var updateArray = [];
+    for (nodeID in nodes) {
+        var node = nodes[nodeID];
+        if (node['shape'] === 'star') {
+            node['value'] = new_max;
+        } else {
+            node['value'] = new_min + (scaleFactor * (node['value'] - old_min));
+        }
+        updateArray.push(node);
+    }
+    return updateArray;
+
 }
 
 /*

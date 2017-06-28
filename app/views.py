@@ -20,6 +20,7 @@ OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,
     'edge_peel': edge_peel,
+    'peel_one': peel_one,
     'k_connected_components': k_connected_components
 }
 float_formatter = lambda x: '{:.2f}'.format(x)
@@ -56,7 +57,6 @@ def index():
 
 @app.route('/load-graph')
 def load_graph():
-    # global Mem.gm
     Mem.gm = GraphManager(None)
     filename = GRAPH_FILES_PATH + request.args.get('filename')
     G = Mem.gm.create_graph(graph_file=filename)
@@ -66,7 +66,6 @@ def load_graph():
 
 @app.route('/load-tree')
 def load_tree():
-    # global T
     filename = TREE_FILES_PATH + request.args.get('filename')
     with open(filename, 'rb') as f:
         Mem.T = pickle.load(f)
@@ -90,7 +89,6 @@ def save_tree():
 
 @app.route('/get-hnode-children')
 def node_children():
-    # global T
     if Mem.T is None:
         return 'No hierarchy tree loaded'
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
@@ -98,8 +96,6 @@ def node_children():
     node_info = []
     if fully_qualified_label.lower() == 'root':
         for child in Mem.T.root.children:
-            # V = len(child.vertex_indices)
-            # E = len(child.edge_indices)
             V = child.num_vertices()
             E = child.num_edges()
             short_label = child.label.split('|')[-1]
@@ -122,8 +118,6 @@ def node_children():
         node = node.children[idx]
 
     for child in node.children:
-        # V = len(child.vertex_indices)
-        # E = len(child.edge_indices)
         V = child.num_vertices()
         E = child.num_edges()
         short_label = child.label.split('|')[-1]
@@ -138,9 +132,27 @@ def node_children():
     return render_template('treeNodes.html', node_info=node_info)
 
 
+@app.route('/remove-hnode-children')
+def remove_node_children():
+    if Mem.T is None:
+        return 'No hierarchy tree loaded'
+    fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    if fully_qualified_label.lower() == 'root':
+        node = Mem.T.root
+    else:
+         # traverse tree
+        sub_ids = fully_qualified_label.split('|')
+        if sub_ids[0].lower() == 'root':
+            sub_ids = sub_ids[1:]
+        node = Mem.T.root
+        for s in xrange(len(sub_ids)):
+            idx = int(sub_ids[s].split('_')[-1])
+            node = node.children[idx]
+    node.remove_children()
+    return node.label
+
 @app.route('/decompose-by-operation')
 def decompose_by_operation():
-    # global T
     if Mem.T is None:
         return jsonify({'msg': 'No hierarchy tree loaded'})
     if Mem.gm.g is None:
@@ -178,8 +190,6 @@ def decompose_by_operation():
     # single child has same vlist and elist
     if len(children) == 1:
         child = children[0]
-        # if (len(child.vertex_indices) == len(vlist) and
-        #         len(child.edge_indices) == len(elist)):
         if (child.num_vertices() == len(vlist) and
                 child.num_edges() == len(elist)):
             msg = 'Could not decompose any further using method: {}'
@@ -206,7 +216,6 @@ def decompose_by_operation():
 
 @app.route('/induce-hnode-subgraph')
 def induce_node_subgraph():
-    # global T
     if Mem.T is None:
         return jsonify({'msg': 'No hierarchy tree loaded'})
     if Mem.gm.g is None:
@@ -229,7 +238,7 @@ def cluster_by_landmarks():
         return jsonify({'msg': 'No hierarchy tree loaded'})
     if Mem.gm.g is None:
         return jsonify({'msg': 'No graph loaded'})
-    
+
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
     # NOTE: handled on front end
@@ -280,7 +289,7 @@ def get_intracluster_summary():
         return jsonify({'msg': 'No graph loaded'})
 
     nodes = json.loads(request.args.get('nodes'))
-    
+
     response = {'nodes': {}}
     for node in nodes:
         cluster_id = node['label']

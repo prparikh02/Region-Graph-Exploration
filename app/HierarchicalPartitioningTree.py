@@ -156,9 +156,9 @@ class PartitionNode(object):
         assert self.edge_indices == []
         vlist, elist = PartitionTree.collect_indices(self)
         self.vertex_indices = vlist
-        self.edge_indices = elst
+        self.edge_indices = elist
         assert len(self.vertex_indices) == self.num_vertices()
-        assert len(self.vertex_edges) == self.num_edges()
+        assert len(self.edge_indices) == self.num_edges()
         self.children = []
 
     def induce_subgraph(self, G):

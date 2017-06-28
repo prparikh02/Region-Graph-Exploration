@@ -239,6 +239,123 @@ def edge_peel(G, vertex_indices=None, edge_indices=None):
     return children
 
 
+def peel_one(G, vertex_indices=None, edge_indices=None):
+    '''
+    Partition Type: Node
+
+    Description: Given graph G and sets of both vertex and edge indices,
+        induce subgraph and group nodes as either peel less than or equal to 1,
+        or greater than 1.
+    '''
+
+    if not isinstance(G, gt.Graph):
+        err_msg = 'G must be a graph_tool.Graph instance'
+        raise ValueError(err_msg)
+
+    if vertex_indices is None and edge_indices is None:
+        err_msg = 'Must provide either vertex indices or edge indices'
+        raise ValueError(err_msg)
+
+    cmd = './app/graph_peeling.bin -t core -o core'
+
+    vp = G.new_vp('bool', vals=False)
+    ep = G.new_ep('bool', vals=False)
+    try:
+        vp.a[vertex_indices] = True
+        ep.a[edge_indices] = True
+    except:
+        err_msg = 'vertex or edge indices not in G'
+        raise IndexError(err_msg)
+    G.set_vertex_filter(vp)
+    G.set_edge_filter(ep)
+    efilt = ep
+
+    children = []
+    v_idx = []
+    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
+    for e in G.edges():
+        p.stdin.write('{} {}\n'.format(e.source(), e.target()))
+        p.stdin.flush()
+    p.stdin.close()
+
+    peel_zero_line = ''
+    peel_one_line = ''
+    while True:
+        line = p.stdout.readline()
+        if line == '':
+            break
+        if not line.startswith('Core'):
+            continue
+        peel = int(line.split(' = ')[0].split('_')[-1])
+        if peel == 0:
+            peel_zero_line = line
+        elif peel == 1:
+            peel_one_line = line
+
+    # line processing
+    if peel_zero_line:
+        label, vertices = peel_zero_line.strip().split(' = ')
+        peel = int(label.split('_')[-1])
+        assert peel == 0
+        v_idx += [int(v) for v in vertices.split()]
+    if peel_one_line:
+        label, vertices = peel_one_line.strip().split(' = ')
+        peel = int(label.split('_')[-1])
+        assert peel == 1
+        v_idx += [int(v) for v in vertices.split()]
+
+    if not v_idx:
+        # if graph has no nodes of peel value less than or equal to 1
+        node = PartitionNode(vertex_indices=vertex_indices,
+                             edge_indices=edge_indices,
+                             partition_type='vertex',
+                             label='VP_GT1_{}'.format(0),
+                             note='peel values greater than (GT) 1')
+        children.append(node)
+        return children
+    elif v_idx == vertex_indices:
+        # if graph has no nodes of peel value greater than 1
+        node = PartitionNode(vertex_indices=vertex_indices,
+                             edge_indices=edge_indices,
+                             partition_type='vertex',
+                             label='VP_LT1_{}'.format(0),
+                             note='peel values less than or equal to (LTE) 1')
+        children.append(node)
+        return children
+
+    # graph contains nodes of peel values both less than or equal to 1 and
+    #   greater than 1
+    # keep only relevant vertices/edges and label edge peels
+    vfilt = G.new_vp('bool', vals=False)
+    vfilt.a[v_idx] = True
+    G.set_vertex_filter(vfilt)
+    print('peel: {}, |V|: {}, |E|: {}'.format(1,
+                                              G.num_vertices(),
+                                              G.num_edges()))
+
+    e_idx = np.where(G.new_ep('bool', vals=True).a == 1)[0]
+    efilt.a[e_idx] = False
+    node = PartitionNode(vertex_indices=v_idx,
+                         edge_indices=e_idx,
+                         partition_type='vertex',
+                         label='VP_LTE1_{}'.format(0),
+                         note='peel values less than or equal to (LTE) 1')
+    children.append(node)
+
+    # get indices for peel values greater than 1
+    v_idx = list(set(vertex_indices) - set(v_idx))
+    e_idx = list(set(edge_indices) - set(e_idx))
+    node = PartitionNode(vertex_indices=v_idx,
+                         edge_indices=e_idx,
+                         partition_type='vertex',
+                         label='VP_GT1_{}'.format(0),
+                         note='peel values greater than (GT) 1')
+    children.append(node)
+
+    G.clear_filters()
+    return children
+
+
 def k_connected_components(G, vertex_indices=None, edge_indices=None):
     '''
     Partition Type: TBD (kind of vertex and edge, but not really a partition)

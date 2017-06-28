@@ -8,12 +8,20 @@
 </head>
 
 <style>
-    #networkCanvas {
+    #networkCanvasContainer {
         float: left;
         width: 700px;
         height: 700px;
         margin-top: 5px;
         border: 1px solid lightgray;
+        resize: both;
+        overflow: hidden;
+    }
+
+    #networkCanvas {
+        width: 98%;
+        height: 98%;
+        margin: 5px;
     }
 
     #hierarchyTree {
@@ -185,6 +193,9 @@
                         <button id="getNodeChildrenBtn" type="button">Get Node Children</button>
                     </div>
                     <div>
+                        <button id="removeChildrenBtn" type="button">Remove Children</button>
+                    </div>
+                    <div>
                         <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
                     </div>
                     <div>
@@ -192,6 +203,9 @@
                     </div>
                     <div>
                         <button id="computeNodeEdgePeelBtn" type="button">Edge Peel Decomposition</button>
+                    </div>
+                    <div>
+                        <button id="computeVertexPeelOneBtn" type="button">Vertex Peel 1</button>
                     </div>
                     <div>
                         <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
@@ -218,7 +232,16 @@
         <div class="canvasContainers">
             <h3>Network</h3>
             <div style="float: left;">
-                <div id="networkCanvas"></div>
+                <div id="networkCanvasContainer">
+                    <div id="networkCanvas"></div>
+                </div>
+                <div>
+                    <button id="stopSimulationBtn" type="button">Pause Simulation</button>
+                    <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
+                    <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
+                    <button id="highlightSpineBtn" type="button">Highlight Spine</button>
+                    <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
+                </div>
                 <div id="dev-ops"></div>
             </div>
             <div style="float: left;">
@@ -228,13 +251,6 @@
                 </div>
                 <div id="degreeDistChart"></div>
             </div>
-        </div>
-        <div>
-            <button id="stopSimulationBtn" type="button">Pause Simulation</button>
-            <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
-            <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
-            <button id="highlightSpineBtn" type="button">Highlight Spine</button>
-            <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
         </div>
     </div>
 
@@ -447,8 +463,8 @@
         var updateArray = [];
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
-            edge['color'] = {'inherit': 'from'};
-            edge['width'] = 1;
+            edge['color'] = {'inherit': 'from', 'opacity': 1.0};
+            edge['width'] = MIN_EDGE_WIDTH;
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
@@ -464,13 +480,15 @@
                 return;
             }
             if (edge['category'] === 'spine') {
-                edge['color'] = 'red';
-                edge['width'] = 15;
+                edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
+                edge['width'] = MAX_EDGE_WIDTH;
             } else if (edge['category'] === 'branch') {
-                edge['color'] = 'black';
-                edge['width'] = 10;
+                edge['color'] = {'color': 'rgba(0,0,0,1.0)'};
+                edge['width'] = Math.round(0.75 * MAX_EDGE_WIDTH);
             } else {
-                edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
+                // edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
+                edge['color'] = {'inherit': 'from', 'opacity': 0.60};
+                edge['width'] = MIN_EDGE_WIDTH;
             }
             updateArray.push(edge);
         }
@@ -510,6 +528,26 @@
             },
             success: function(response) {
                 node.after(response);
+            },
+            complete: function() {
+                $('#getNodeChildrenBtn :button').prop('disabled', false);
+            }
+        });
+    });
+
+    $('#removeChildrenBtn').on('click', function(e) {
+        var node = $("#hierarchyTree li>span.selected");
+        var fullyQualifiedLabel = node.attr('data-value');
+        $('#removeChildrenBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/remove-hnode-children',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                // node.after(response);
+                console.log(response);
             },
             complete: function() {
                 $('#getNodeChildrenBtn :button').prop('disabled', false);
@@ -576,7 +614,9 @@
                     return;
                 }
                 var vis_data = response['vis_data'];
-                nodesDataset = new vis.DataSet(vis_data['nodes']);
+                // makes landmarks bigger
+                var nodes = remapNodeSizes(vis_data['nodes'])
+                nodesDataset = new vis.DataSet(nodes);
                 edgesDataset = new vis.DataSet(vis_data['edges']);
 
                 if (vis_data['nodes'].length > 2200) {
@@ -788,6 +828,18 @@
         }
         var operation = 'edge_peel';
         var btn = $('#computeNodeEdgePeelBtn :button')
+        decompose_by_operation(node, operation, btn);
+    });
+
+    $('#computeVertexPeelOneBtn').on('click', function(e) {
+        var node = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
+        var operation = 'peel_one';
+        var btn = $('#computeVertexPeelOneBtn :button')
         decompose_by_operation(node, operation, btn);
     });
 

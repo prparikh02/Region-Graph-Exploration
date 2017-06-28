@@ -70,6 +70,7 @@ def induce_subgraph(G, vlist, elist):
         }
     }
 
+
 def print_adjacency_list(G, vlist, elist):
     vfilt = G.new_vp('bool', vals=False)
     vfilt.a[vlist] = True
@@ -122,7 +123,7 @@ def print_adjacency_list(G, vlist, elist):
         for i in xrange(len(v_idxs) - 1):
             branch.append(G.edge(v_idxs[i], v_idxs[i + 1]))
         tree.append(branch)
-    
+
     spine = set(tree[0])
     branches = set()
     for branch in tree[1:]:
@@ -228,7 +229,12 @@ def to_vis_json_cluster_map(G,
         title = label
         value = v.out_degree()
         group = cluster_assignment[v_id]
-        shape = 'star' if v_id in landmark_map else 'dot'
+        if v_id in landmark_map:
+            shape = 'star'
+            border_width = 2
+        else:
+            shape = 'dot'
+            border_width = 1
         nodes.append({
             'id': v_id,
             'label': label,
@@ -236,6 +242,7 @@ def to_vis_json_cluster_map(G,
             'value': value,
             'group': group,
             'shape': shape,
+            'borderWidth': border_width,
         })
 
     edges = []

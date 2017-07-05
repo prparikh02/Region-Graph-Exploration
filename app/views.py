@@ -25,10 +25,13 @@ OPERATIONS = {
 }
 float_formatter = lambda x: '{:.2f}'.format(x)
 client = MongoClient('localhost', 27017)
-db = client['citeseerx']
-clusters_coll = db['clusters']
-paper_md_coll = db['paper_metadata']
-
+# db = client['citeseerx']
+# clusters_coll = db['clusters']
+# paper_md_coll = db['paper_metadata']
+db = client['danish_project']
+articles_coll = db['articles']
+named_entities_coll = db['named_entities']
+regions_coll = db['regions']
 
 class Mem:
     T = None
@@ -259,23 +262,41 @@ def summarize_clusters():
     if Mem.gm.g is None:
         return jsonify({'msg': 'No graph loaded'})
 
+    # clusters = json.loads(request.args.get('clusters'))
+    # response = {}
+    # # NOTE: clusters not to be confused with clusters in citeseerx database
+    # for group_id in clusters:
+    #     landmark = clusters[group_id]['landmark']
+    #     cluster_id = landmark['label']
+
+    #     cursor = clusters_coll.find({'cluster_id': cluster_id})
+    #     dois = [doc['doi'] for doc in cursor]
+    #     if not dois:
+    #         response[cluster_id] = ''
+    #         continue
+
+    #     cursor = paper_md_coll.find({'doi': {'$in': dois}})
+    #     # NOTE: Remove [0:1] from cursor to show all results
+    #     for doc in cursor[0:1]:
+    #         response[cluster_id] = doc['title']
+
     clusters = json.loads(request.args.get('clusters'))
+    print clusters
     response = {}
-    # NOTE: clusters not to be confused with clusters in citeseerx database
-    for group_id in clusters:
-        landmark = clusters[group_id]['landmark']
-        cluster_id = landmark['label']
-
-        cursor = clusters_coll.find({'cluster_id': cluster_id})
-        dois = [doc['doi'] for doc in cursor]
-        if not dois:
-            response[cluster_id] = ''
-            continue
-
-        cursor = paper_md_coll.find({'doi': {'$in': dois}})
-        # NOTE: Remove [0:1] from cursor to show all results
-        for doc in cursor[0:1]:
-            response[cluster_id] = doc['title']
+    for k, v in clusters.iteritems():
+        # region id
+        landmark_id = v['landmark']['id']
+        region_cursor = regions_coll.find({'_id': landmark_id})
+        # TODO: Should be an assertion, actually of length 1
+        region = region_cursor[0]
+        print 'regions', region
+        for ne_id in region['named_entities']:
+            named_entities = named_entities_coll.find({'_id': int(ne_id)})
+            NE = []
+            for named_entity in named_entities:
+                print named_entity
+                NE.append(named_entity['named_entity'])
+            response[landmark_id] = '| '.join(NE)
 
     return jsonify(response)
 
@@ -290,26 +311,42 @@ def get_intracluster_summary():
 
     nodes = json.loads(request.args.get('nodes'))
 
+    # response = {'nodes': {}}
+    # for node in nodes:
+    #     cluster_id = node['label']
+
+    #     cursor = clusters_coll.find({'cluster_id': cluster_id})
+    #     dois = [doc['doi'] for doc in cursor]
+    #     if not dois:
+    #         result[cluster_id] = ''
+    #         continue
+
+    #     cursor = paper_md_coll.find({'doi': {'$in': dois}})
+    #     # NOTE: Remove [0:1] from cursor to show all results
+    #     for doc in cursor[0:1]:
+    #         response['nodes'][cluster_id] = doc['title']
+
     response = {'nodes': {}}
     for node in nodes:
-        cluster_id = node['label']
+        region_id = node['label']
 
-        cursor = clusters_coll.find({'cluster_id': cluster_id})
-        dois = [doc['doi'] for doc in cursor]
-        if not dois:
-            result[cluster_id] = ''
-            continue
-
-        cursor = paper_md_coll.find({'doi': {'$in': dois}})
-        # NOTE: Remove [0:1] from cursor to show all results
-        for doc in cursor[0:1]:
-            response['nodes'][cluster_id] = doc['title']
+        region_cursor = regions_coll.find({'_id': int(region_id)})
+        # TODO: Should be an assertion, actually of length 1
+        region = region_cursor[0]
+        print 'regions', region
+        for ne_id in region['named_entities']:
+            named_entities = named_entities_coll.find({'_id': int(ne_id)})
+            NE = []
+            for named_entity in named_entities:
+                print named_entity
+                NE.append(named_entity['named_entity'])
+            response['nodes'][region_id] = '| '.join(NE)
 
     try:
         text_list = [response['nodes'][label] for label in response['nodes']]
         summary = summarize('. '.join(text_list))
         response['summary'] = summary
-    except TypeError:
+    except TypeError, ValueError:
         print 'couldn\'t produce summary...'
     return jsonify(response)
 
@@ -325,24 +362,44 @@ def get_hierarchy_tree():
 
 @app.route('/doc-lookup')
 def doc_lookup():
-    cluster_id = str(request.args.get('cluster_id'))
+    # cluster_id = str(request.args.get('cluster_id'))
+    # if not cluster_id:
+    #     return jsonify({'error_message': 'invalid cluster_id'})
+
+    # cursor = clusters_coll.find({'cluster_id': cluster_id})
+    # dois = [doc['doi'] for doc in cursor]
+
+    # if not dois:
+    #     return jsonify({'error_message': 'no doi\'s found'})
+
+    # cursor = paper_md_coll.find({'doi': {'$in': dois}})
+    # results = {}
+    # # NOTE: Remove [0:1] from cursor to show all results
+    # for doc in cursor[0:1]:
+    #     doc.pop('_id', None)
+    #     results[doc['doi']] = doc
+
+    # return jsonify(results)
+
+    cluster_id = int(request.args.get('cluster_id'))
     if not cluster_id:
         return jsonify({'error_message': 'invalid cluster_id'})
 
-    cursor = clusters_coll.find({'cluster_id': cluster_id})
-    dois = [doc['doi'] for doc in cursor]
+    region_cursor = regions_coll.find({'_id': cluster_id})
+    # TODO: Should be an assertion, actually of length 1
+    region = region_cursor[0]
+    A = {'region': region['_id']}
+    A['named_entities'] = []
+    for named_entity in region['named_entities']:
+        ne_cursor = named_entities_coll.find({'_id': int(named_entity)})
+        for doc in ne_cursor:
+            A['named_entities'].append(doc)
 
-    if not dois:
-        return jsonify({'error_message': 'no doi\'s found'})
-
-    cursor = paper_md_coll.find({'doi': {'$in': dois}})
-    results = {}
-    # NOTE: Remove [0:1] from cursor to show all results
-    for doc in cursor[0:1]:
-        doc.pop('_id', None)
-        results[doc['doi']] = doc
-
-    return jsonify(results)
+    # for doc in region_cursor:
+    #     ne_cursor = named_entities_coll.find({'_id': doc[]})
+    #     doc['named_entity']
+    # results = [doc for doc in cursor]
+    return jsonify(A)
 
 
 @app.route('/bfs-tree')

@@ -35,8 +35,9 @@ function redrawAll(container='networkCanvas') {
                 min: min_node_size,
                 max: max_node_size,
                 label: {
-                    min: 8,
-                    max: 30,
+                    // originall 8, 30
+                    min: 20,
+                    max: 60,
                     drawThreshold: 5,
                     maxVisible: 50
                 }

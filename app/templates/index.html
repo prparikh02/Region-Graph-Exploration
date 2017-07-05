@@ -244,11 +244,18 @@
                     <div id="networkCanvas"></div>
                 </div>
                 <div>
-                    <button id="stopSimulationBtn" type="button">Pause Simulation</button>
-                    <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
-                    <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
-                    <button id="highlightSpineBtn" type="button">Highlight Spine</button>
-                    <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
+                    <div>
+                        <button id="stopSimulationBtn" type="button">Pause Simulation</button>
+                        <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
+                        <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
+                    </div>
+                    <div>
+                        <button id="highlightBfsTreeBtn" type="button">Highlight BFS Tree</button>
+                        <button id="highlightSpineAndNetBtn" type="button">Highlight Net</button>
+                        <button id="highlightOnlySpine" type="button">Highlight Spine</button>
+                        <button id="highlightLandmarksPlusOneHopBtn" type="button">Landmark Neighborhood</button>
+                        <button id="overlaySpineBtn" type="button">Overlay Spine</button>
+                    </div>
                 </div>
                 <div id="dev-ops"></div>
             </div>
@@ -313,6 +320,7 @@
 <script src="/static/js/exporting.js"></script>
 
 <script>
+    var edgesShown = true;
     $('#loadGraphBtn').on('click', function(e) {
         $('#graphSelect').prop('disabled', true);
         $('#loadGraphBtn').prop('disabled', true);
@@ -459,12 +467,14 @@
     $('#toggleEdgesBtn').click(function(e) {
         e.preventDefault();
         var updateArray = [];
+        var displayEdges = !edgesShown;
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
-            edge['hidden'] = !edge['hidden'];
+            edge['hidden'] = displayEdges;
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
+        edgesShown = !edgesShown;
     });
 
     $('#resetEdgeColorsBtn').click(function(e) {
@@ -472,6 +482,7 @@
         var updateArray = [];
         for (edgeID in allEdges) {
             var edge = allEdges[edgeID];
+            edge['hidden'] = false;
             edge['color'] = {'inherit': 'from', 'opacity': 1.0};
             edge['width'] = MIN_EDGE_WIDTH;
             updateArray.push(edge);
@@ -479,7 +490,7 @@
         edgesDataset.update(updateArray);
     });
 
-    $('#highlightSpineBtn').click(function(e) {
+    $('#overlaySpineBtn').click(function(e) {
         e.preventDefault();
         var spineLength = 0;
         var updateArray = [];
@@ -489,6 +500,7 @@
                 alert('Edges are not annotated with spine categories.');
                 return;
             }
+            edge['hidden'] = false;
             if (edge['category'] === 'spine') {
                 edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
                 edge['width'] = MAX_EDGE_WIDTH;
@@ -500,6 +512,101 @@
                 // edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
                 edge['color'] = {'inherit': 'from', 'opacity': 0.60};
                 edge['width'] = MIN_EDGE_WIDTH;
+            }
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+    });
+
+    $('#highlightOnlySpine').click(function(e) {
+        e.preventDefault();
+        var spineLength = 0;
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (!edge.hasOwnProperty('category')) {
+                alert('Edges are not annotated with spine categories.');
+                return;
+            }
+            edge['hidden'] = false;
+            if (edge['category'] === 'spine') {
+                edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
+                edge['width'] = MAX_EDGE_WIDTH;
+                spineLength++;
+            } else {
+                edge['width'] = MIN_EDGE_WIDTH;
+                edge['hidden'] = true;
+            }
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+    });
+
+    $('#highlightSpineAndNetBtn').click(function(e) {
+        e.preventDefault();
+        var spineLength = 0;
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (!edge.hasOwnProperty('category')) {
+                alert('Edges are not annotated with spine categories.');
+                return;
+            }
+            edge['hidden'] = false;
+            if (edge['category'] === 'spine') {
+                edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
+                edge['width'] = MAX_EDGE_WIDTH;
+                spineLength++;
+            } else if (edge['category'] === 'branch') {
+                edge['color'] = {'color': 'rgba(0,0,0,1.0)'};
+                edge['width'] = Math.round(0.75 * MAX_EDGE_WIDTH);
+            } else {
+                // edge['color'] = {'color': 'rgba(200,200,200,0.5)'};
+                // edge['color'] = {'inherit': 'from', 'opacity': 0.60};
+                // edge['width'] = MIN_EDGE_WIDTH;
+                edge['hidden'] = true;
+            }
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+    });
+
+    $('#highlightLandmarksPlusOneHopBtn').click(function(e) {
+        e.preventDefault();
+        var spineLength = 0;
+        var landmarkNodes = {};
+        for (nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            if (node['shape'] === 'star') {
+                landmarkNodes[node['id']] = 1;
+            }
+        }
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (!edge.hasOwnProperty('category')) {
+                alert('Edges are not annotated with spine categories.');
+                return;
+            }
+            edge['hidden'] = false;
+            if (edge['category'] === 'spine') {
+                edge['color'] = {'color': 'rgba(255,0,0,1.0)'};
+                edge['width'] = MAX_EDGE_WIDTH;
+                spineLength++;
+            } else if (edge['category'] === 'branch') {
+                edge['color'] = {'color': 'rgba(0,0,0,1.0)'};
+                edge['width'] = Math.round(0.75 * MAX_EDGE_WIDTH);
+            } else {
+                var srcNodeID = edge['from'];
+                var tarNodeID = edge['to'];
+                if (!landmarkNodes.hasOwnProperty(srcNodeID) &&
+                        !landmarkNodes.hasOwnProperty(tarNodeID)) {
+                    edge['hidden'] = true;
+                    edge['width'] = Math.round(0.15 * MAX_EDGE_WIDTH);
+                }
             }
             updateArray.push(edge);
         }

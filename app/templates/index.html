@@ -247,6 +247,7 @@
                     <div>
                         <button id="stopSimulationBtn" type="button">Pause Simulation</button>
                         <button id="toggleEdgesBtn" type="button">Toggle Edges</button>
+                        <button id="toggleArrowsBtn" type="button">Toggle Arrows</button>
                         <button id="resetEdgeColorsBtn" type="button">Reset Edge Colors</button>
                     </div>
                     <div>
@@ -475,6 +476,21 @@
         }
         edgesDataset.update(updateArray);
         edgesShown = !edgesShown;
+    });
+
+    $('#toggleArrowsBtn').click(function(e) {
+        e.preventDefault();
+        var updateArray = [];
+        for (edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (edge.hasOwnProperty('arrows')) {
+                delete edge['arrows'];
+            } else {
+                edge['arrows'] = 'to';
+            }
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
     });
 
     $('#resetEdgeColorsBtn').click(function(e) {

@@ -3,3 +3,6 @@ app/data/graphs/*
 app/data/trees/*
 .ipynb_checkpoints/
 scripts/
+graphs.txt
+spine_clustering_v2.bin
+test_io.bin

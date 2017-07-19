@@ -281,7 +281,6 @@ def summarize_clusters():
     #         response[cluster_id] = doc['title']
 
     clusters = json.loads(request.args.get('clusters'))
-    print clusters
     response = {}
     for k, v in clusters.iteritems():
         # region id
@@ -289,12 +288,10 @@ def summarize_clusters():
         region_cursor = regions_coll.find({'_id': landmark_id})
         # TODO: Should be an assertion, actually of length 1
         region = region_cursor[0]
-        print 'regions', region
         for ne_id in region['named_entities']:
             named_entities = named_entities_coll.find({'_id': int(ne_id)})
             NE = []
             for named_entity in named_entities:
-                print named_entity
                 NE.append(named_entity['named_entity'])
             response[landmark_id] = '| '.join(NE)
 
@@ -328,17 +325,16 @@ def get_intracluster_summary():
 
     response = {'nodes': {}}
     for node in nodes:
+        # TODO: This often fails. Not sure why...
         region_id = node['label']
 
         region_cursor = regions_coll.find({'_id': int(region_id)})
         # TODO: Should be an assertion, actually of length 1
         region = region_cursor[0]
-        print 'regions', region
         for ne_id in region['named_entities']:
             named_entities = named_entities_coll.find({'_id': int(ne_id)})
             NE = []
             for named_entity in named_entities:
-                print named_entity
                 NE.append(named_entity['named_entity'])
             response['nodes'][region_id] = '| '.join(NE)
 
@@ -388,8 +384,10 @@ def doc_lookup():
     region_cursor = regions_coll.find({'_id': cluster_id})
     # TODO: Should be an assertion, actually of length 1
     region = region_cursor[0]
-    A = {'region': region['_id']}
+    A = {'region_id': region['_id']}
     A['named_entities'] = []
+    A['depth'] = region['depth']
+    A['size'] = region['size']
     for named_entity in region['named_entities']:
         ne_cursor = named_entities_coll.find({'_id': int(named_entity)})
         for doc in ne_cursor:

@@ -87,7 +87,10 @@ def print_adjacency_list(G, vlist, elist):
     efilt.a[elist] = True
     G.set_edge_filter(efilt)
 
-    cmd = './app/spine_clustering.bin'
+    # cmd = './app/spine_clustering.bin'
+    # cmd = './app/spine_clustering_v2.bin'
+    # cmd = './app/test_io.bin'
+    cmd = './app/spine_v5.bin'
     p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
 
     for v in G.vertices():
@@ -117,9 +120,7 @@ def print_adjacency_list(G, vlist, elist):
             cluster_assignment[v_idx] = nearest_landmark
     cluster_assignment = \
         {k: landmark_map[v] for k, v in cluster_assignment.iteritems()}
-    print cluster_assignment
-    print landmark_map
-
+    
     # get spine
     tree = []
     while True:
@@ -127,17 +128,22 @@ def print_adjacency_list(G, vlist, elist):
         if line == '':
             break
         v_idxs = line.strip().split()
+        # if int(v_idxs[-1]) not in landmark_map:
+        #     continue
         branch = []
         for i in xrange(len(v_idxs) - 1):
             branch.append(G.edge(v_idxs[i], v_idxs[i + 1]))
         tree.append(branch)
 
     spine = set(tree[0])
+    spine_nodes = set()
+    for e in spine:
+        spine_nodes.add(e.source())
+        spine_nodes.add(e.target())
+
     branches = set()
     for branch in tree[1:]:
         branches.update(branch)
-    print spine
-    print branches
 
     vis_data = to_vis_json_cluster_map(G,
                                        cluster_assignment,

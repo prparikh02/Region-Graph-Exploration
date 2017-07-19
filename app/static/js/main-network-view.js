@@ -3,7 +3,7 @@ var allNodes, allEdges;
 var highlightActive = false;
 // It is required that MIN_NODE_SIZE < 0.80 * MAX_NODE_SIZE
 var MIN_NODE_SIZE = 30,
-    MAX_NODE_SIZE = 100
+    MAX_NODE_SIZE = 85
     MIN_EDGE_WIDTH = 1,
     MAX_EDGE_WIDTH = 25;
 
@@ -20,12 +20,14 @@ function redrawAll(container='networkCanvas') {
         max_node_size = MAX_NODE_SIZE;
 
     // for small graphs
-    if (numNodes < 0.50 * MAX_NODE_SIZE) {
-        min_node_size = Math.round(0.50 * MIN_NODE_SIZE);
-        max_node_size = Math.round(0.50 * MAX_NODE_SIZE);
-    } else if (numNodes < 0.25 * MAX_NODE_SIZE) {
+    if (numNodes < 0.25 * MAX_NODE_SIZE) {
         min_node_size = Math.round(0.25 * MIN_NODE_SIZE);
         max_node_size = Math.round(0.25 * MAX_NODE_SIZE);
+        console.log('less than 0.25');
+    } else if (numNodes < 0.50 * MAX_NODE_SIZE) {
+        min_node_size = Math.round(0.50 * MIN_NODE_SIZE);
+        max_node_size = Math.round(0.50 * MAX_NODE_SIZE);
+        console.log('less than 0.50');
     }
 
     var options = {
@@ -177,13 +179,13 @@ function fetch_node_info(node_id) {
             renderjson.set_icons('++', '--');
             renderjson.set_show_to_level(2);
             $('#nodeInfo').empty();
+            // TODO: change so that it looks more like one object 
             for (var key in data) {
                 if (!data.hasOwnProperty(key)) {
                     continue;
                 }
                 $('#nodeInfo').append(renderjson(data[key]));
             }
-
             $('#nodeProps').html('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });

@@ -58,6 +58,7 @@ def induce_subgraph(G, vlist, elist):
     if not G:
         return 'No graph loaded'
 
+    # get proper indices
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
     if vlist is []:
@@ -69,13 +70,90 @@ def induce_subgraph(G, vlist, elist):
     G.set_vertex_filter(vp)
     G.set_edge_filter(ep)
 
-    js_graph = to_vis_json(G, is_bcc_tree=False)
+    # TODO: I think this can be consolidated?
+    # js_graph = to_vis_json(G)
+
+    # return {
+    #     'vis_data': {
+    #         'nodes': js_graph['nodes'],
+    #         'edges': js_graph['edges']
+    #     }
+    # }
+    return {'vis_data': to_vis_json(G)}
+
+
+def bcc_tree(G, vlist, elist):
+    # get proper indices
+    vp = G.new_vp('bool', vals=False)
+    ep = G.new_ep('bool', vals=False)
+    if vlist is [] or not vlist:
+        vlist = np.ones_like(vp.a)
+    if elist is [] or not elist:
+        elist = np.ones_like(ep.a)
+    vp.a[vlist] = True
+    ep.a[elist] = True
+    G.set_vertex_filter(vp)
+    G.set_edge_filter(ep)
+
+    # label biconnected components
+    bcc, art, _ = gt.label_biconnected_components(G)
+
+    # create metagraph
+    Gp = gt.Graph(directed=False)
+    Gp.vp['count'] = Gp.new_vp('int', vals=-1)
+    Gp.vp['is_articulation'] = Gp.new_vp('bool', vals=False)
+    Gp.vp['id'] = Gp.new_vp('string', vals='')
+    Gp.ep['count'] = Gp.new_ep('int', vals=0)
+
+    # add bcc metanodes
+    # each bcc metanode will be indexed in Gp in increasing order of bcc id,
+    #     a scheme which is leveraged later below.
+    B = sorted(Counter(bcc.a[elist]).items())
+    for b, count in B:
+        v = Gp.add_vertex()
+        Gp.vp['count'][v] = count
+
+    # add articulation points and metagraph edges
+    elist_set = set(elist)
+    ap_list = [G.vertex(v) for v in np.where(art.a == 1)[0]]
+    for ap in ap_list:
+        v = Gp.add_vertex()
+        Gp.vp['count'][v] = 1
+        Gp.vp['is_articulation'][v] = True
+        # assign original vertex_index as art point's id
+        Gp.vp['id'][v] = str(G.vertex_index[ap])
+        for e in ap.out_edges():
+            # NOTE: Following if should never evaluate true...
+            if G.edge_index[e] not in elist_set:
+                continue
+            # add metagraph edge if not already present
+            meta_e = Gp.edge(v, Gp.vertex(bcc[e]))
+            if not meta_e:
+                meta_e = Gp.add_edge(v, Gp.vertex(bcc[e]))
+            Gp.ep['count'][meta_e] += 1
+
+    # assert bcc tree is, in fact, a tree
+    comp, _ = gt.label_components(G)
+    num_components = len(np.unique(comp.a))
+    assert Gp.num_edges() == Gp.num_vertices() - num_components
+
+    # articulation point degree distribution
+    ap_degrees = [v.out_degree() for v in ap_list]
+    ap_deg_bins, ap_deg_counts = \
+        zip(*sorted(Counter(ap_degrees).items()))
+
+    # bcc size distribution (no. of edges)
+    bcc_size_bins, bcc_size_counts = \
+        zip(*sorted(Counter(zip(*B)[-1]).items()))
+
+    vis_data = to_vis_json_bcc_tree(Gp)
 
     return {
-        'vis_data': {
-            'nodes': js_graph['nodes'],
-            'edges': js_graph['edges']
-        }
+        'vis_data': vis_data,
+        'ap_deg_bins': ap_deg_bins,
+        'ap_deg_counts': ap_deg_counts,
+        'bcc_size_bins': bcc_size_bins,
+        'bcc_size_counts': bcc_size_counts,
     }
 
 
@@ -120,7 +198,7 @@ def print_adjacency_list(G, vlist, elist):
             cluster_assignment[v_idx] = nearest_landmark
     cluster_assignment = \
         {k: landmark_map[v] for k, v in cluster_assignment.iteritems()}
-    
+
     # get spine
     tree = []
     while True:
@@ -155,18 +233,13 @@ def print_adjacency_list(G, vlist, elist):
     }
 
 
-def to_vis_json(G, is_bcc_tree=False, filename=None):
-    if is_bcc_tree:
-        return to_vis_json_bcc_tree(G, filename)
-
+def to_vis_json(G, filename=None):
     nodes = []
     for v in G.vertices():
         # v_id = G.vp['id'][v]
         # label = v_id
         v_id = G.vertex_index[v]
         label = G.vp['id'][v]
-        # is_art = G.vp['is_articulation'][v]
-        # group = 1 if is_art else 0
         group = 1
         title = label
         value = v.out_degree()
@@ -195,19 +268,21 @@ def to_vis_json(G, is_bcc_tree=False, filename=None):
 
 
 def to_vis_json_bcc_tree(G, filename=None):
+    AP_GROUP = 0
+    BCC_METANODE_GROUP = 1
     nodes = []
     for v in G.vertices():
         v_id = G.vertex_index[v]
+        count = G.vp['count'][v]
         is_art = G.vp['is_articulation'][v]
-        label = v_id
         if is_art:
-            count = 1
-            title = 'AP: {}'.format(G.vp['id'][v])
-            group = 0
+            label = G.vp['id'][v]
+            title = 'AP: {}'.format(label)
+            group = AP_GROUP
         else:
-            count = G.vp['count'][v]
             title = 'BCC: {} | Count: {}'.format(v_id, count)
-            group = 1
+            label = title
+            group = BCC_METANODE_GROUP
         value = count
         nodes.append({
                 'id': v_id,
@@ -225,7 +300,7 @@ def to_vis_json_bcc_tree(G, filename=None):
                 'id': G.edge_index[e],
                 'from': src,
                 'to': tar,
-                # 'value': 1,
+                'value': G.ep['count'][e],
             })
 
     return {'nodes': nodes, 'edges': edges}

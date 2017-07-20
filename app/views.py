@@ -33,9 +33,11 @@ articles_coll = db['articles']
 named_entities_coll = db['named_entities']
 regions_coll = db['regions']
 
+
 class Mem:
     T = None
     gm = GraphManager(None)
+    # TODO: Do we really need this current_view?
     current_view = {}
 
 
@@ -143,7 +145,7 @@ def remove_node_children():
     if fully_qualified_label.lower() == 'root':
         node = Mem.T.root
     else:
-         # traverse tree
+        # traverse tree
         sub_ids = fully_qualified_label.split('|')
         if sub_ids[0].lower() == 'root':
             sub_ids = sub_ids[1:]
@@ -153,6 +155,7 @@ def remove_node_children():
             node = node.children[idx]
     node.remove_children()
     return node.label
+
 
 @app.route('/decompose-by-operation')
 def decompose_by_operation():
@@ -442,6 +445,19 @@ def bfs_tree():
             Q.put(neighbor)
             tree_edges.append(G.edge(v, neighbor))
     return jsonify({G.edge_index[e]: 1 for e in tree_edges})
+
+
+@app.route('/compute-bcc-tree')
+def compute_bcc_tree():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+
+    fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    vlist, elist = get_indices(fully_qualified_label)
+
+    return jsonify(bcc_tree(Mem.gm.g, vlist, elist))
 
 
 def get_indices(fully_qualified_label):

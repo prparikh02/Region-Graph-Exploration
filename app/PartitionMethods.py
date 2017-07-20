@@ -348,7 +348,7 @@ def peel_one(G, vertex_indices=None, edge_indices=None):
     node = PartitionNode(vertex_indices=v_idx,
                          edge_indices=e_idx,
                          partition_type='vertex',
-                         label='VP_GT1_{}'.format(0),
+                         label='VP_GT1_{}'.format(1),
                          note='peel values greater than (GT) 1')
     children.append(node)
 

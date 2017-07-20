@@ -15,6 +15,7 @@ function redrawAll(container='networkCanvas') {
         edges: edgesDataset
     }
 
+    /*
     var numNodes = nodesDataset.length;
     var min_node_size = MIN_NODE_SIZE,
         max_node_size = MAX_NODE_SIZE;
@@ -29,18 +30,19 @@ function redrawAll(container='networkCanvas') {
         max_node_size = Math.round(0.50 * MAX_NODE_SIZE);
         console.log('less than 0.50');
     }
+    */
 
     var options = {
         nodes: {
             shape: 'dot',
             scaling: {
-                min: min_node_size,
-                max: max_node_size,
+                min: MIN_NODE_SIZE,
+                max: MAX_NODE_SIZE,
                 label: {
                     // originall 8, 30
                     min: 20,
-                    max: 60,
-                    drawThreshold: 5,
+                    max: 50,
+                    drawThreshold: 10,
                     maxVisible: 50
                 }
             },
@@ -75,7 +77,7 @@ function redrawAll(container='networkCanvas') {
             solver: 'forceAtlas2Based',
             timestep: 0.35,
             stabilization: {
-                iterations: 150
+                iterations: 250
             }
         },
         interaction: {
@@ -186,7 +188,7 @@ function fetch_node_info(node_id) {
                 }
                 $('#nodeInfo').append(renderjson(data[key]));
             }
-            $('#nodeProps').html('Degree: ' + network.getConnectedNodes(node_id).length);
+            $('#nodeInfo').append('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });
 }

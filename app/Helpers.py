@@ -70,15 +70,6 @@ def induce_subgraph(G, vlist, elist):
     G.set_vertex_filter(vp)
     G.set_edge_filter(ep)
 
-    # TODO: I think this can be consolidated?
-    # js_graph = to_vis_json(G)
-
-    # return {
-    #     'vis_data': {
-    #         'nodes': js_graph['nodes'],
-    #         'edges': js_graph['edges']
-    #     }
-    # }
     return {'vis_data': to_vis_json(G)}
 
 

@@ -8,7 +8,7 @@
 </head>
 
 <style>
-    #networkCanvasContainer {
+    .networkCanvasContainer {
         float: left;
         width: 700px;
         height: 700px;
@@ -19,6 +19,12 @@
     }
 
     #networkCanvas {
+        width: 98%;
+        height: 98%;
+        margin: 5px;
+    }
+
+    #bccTreeCanvas {
         width: 98%;
         height: 98%;
         margin: 5px;
@@ -71,7 +77,7 @@
         margin: 5px;
     }
 
-    #degreeDistChart {
+    .distributionChart {
         width: 450px;
         height: 300px;
         margin: 5px;
@@ -79,7 +85,7 @@
         border: 1px solid lightgray;
     }
 
-    #additionalInfoDiv {
+    .additionalInfoDiv {
         width: 450px;
         height: 80px;
         margin: 5px;
@@ -191,7 +197,7 @@
                         <button id="landmarksBtn" type="button">Landmarks</button>
                     </div>
                     <div>
-                        <button id="computeBccTreeBtn" disabled="true" type="button">Compute BCC Tree</button>
+                        <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
                     </div>
                 </div>
                 <br/>
@@ -222,25 +228,11 @@
         </div>
     </div>
 
-
-    <!-- https://clusterize.js.org/ -->
-
-    <div style="clear: both; display: none;">
-        <h3>BCC Tree Statistics</h3>
-        <div id="bccTreeStatistics">
-        </div>
-        <div style="clear: both;">
-            <button id="descendBtn" type="button" style="display: none;">Descend</button>
-            <div id="iterativeEdgePeel" style="display: none;"></div>
-            <button id="iterativeEdgePeelBtn" style="display: none;" type="button">Edge Peeling</button>
-        </div>
-    </div>
-
     <div style="clear: both; float: left;">
         <div class="canvasContainers">
             <h3>Network</h3>
             <div style="float: left;">
-                <div id="networkCanvasContainer">
+                <div class="networkCanvasContainer">
                     <div id="networkCanvas"></div>
                 </div>
                 <div>
@@ -263,13 +255,28 @@
             <div style="float: left;">
                 <div id="nodeInfoContainer">
                     <div id="nodeInfo"></div>
-                    <div id="nodeProps"></div>
                 </div>
-                <div id="degreeDistChart"></div>
-                <div id="additionalInfoDiv"></div>
+                <div id="degreeDistChart" class="distributionChart"></div>
+                <div id="landmarksInfoDiv" class="additionalInfoDiv"></div>
             </div>
         </div>
     </div>
+
+     <div id="bccTreeContainer" style="clear: both; float: left; display: none;">
+        <div class="canvasContainers">
+            <h3>BCC Tree</h3>
+            <div style="float: left;">
+                <div class="networkCanvasContainer">
+                    <div id="bccTreeCanvas"></div>
+                </div>
+            </div>
+            <div style="float: left;">
+                <div id="apDegreeDistChart" class="distributionChart"></div>
+                <div id="bccSizeDistChart" class="distributionChart"></div>
+                <div id="bccTreeInfoDiv" class="additionalInfoDiv"></div>
+            </div>
+        </div>
+    </div> 
 
     <div id="clusterDescriptions" style="display: none;">
         <div id="landmarksTableContainer">
@@ -310,6 +317,7 @@
 
 </body>
 
+<!-- TODO: Standardize script links -->
 <script src="{{url_for('static', filename='js/jquery-3.2.1.min.js')}}"></script>
 <script src="/static/js/vis.min.js"></script>
 <link href="/static/css/vis.min.css" rel="stylesheet" type="text/css" />
@@ -532,7 +540,7 @@
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
-        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+        $('#landmarksInfoDiv').html('Spine Length: ' + spineLength);
     });
 
     $('#highlightOnlySpine').click(function(e) {
@@ -557,7 +565,7 @@
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
-        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+        $('#landmarksInfoDiv').html('Spine Length: ' + spineLength);
     });
 
     $('#highlightSpineAndNetBtn').click(function(e) {
@@ -587,7 +595,7 @@
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
-        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+        $('#landmarksInfoDiv').html('Spine Length: ' + spineLength);
     });
 
     $('#highlightLandmarksPlusOneHopBtn').click(function(e) {
@@ -627,7 +635,7 @@
             updateArray.push(edge);
         }
         edgesDataset.update(updateArray);
-        $('#additionalInfoDiv').html('Spine Length: ' + spineLength);
+        $('#landmarksInfoDiv').html('Spine Length: ' + spineLength);
     });
 
     $('body').on('click', 'span.node', function(e) {
@@ -721,6 +729,7 @@
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
+                $('#bccTreeContainer').css('display', 'none');
             }
         });
     });
@@ -765,9 +774,91 @@
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
                 $('#clusterDescriptions').show();
+                $('#bccTreeContainer').css('display', 'block');
             }
         });
     });
+
+    $('#computeBccTreeBtn').click(function(e) {
+        e.preventDefault();
+        var node = '',
+            fullyQualifiedLabel = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
+        fullyQualifiedLabel = node.attr('data-value');
+
+        $('#computeBccTreeBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/compute-bcc-tree',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var vis_data = response['vis_data'];
+    
+                // makes landmarks bigger
+                var nodes = remapNodeSizes(vis_data['nodes'])
+                var edges = vis_data['edges'];
+                nodesDataset = new vis.DataSet(nodes);
+                edgesDataset = new vis.DataSet(edges);
+
+                // draw bcc tree
+                if (vis_data['nodes'].length > 2400) {
+                    alert('Graph is too large to visualize');
+                } else {
+                    redrawAll('bccTreeCanvas');
+                }
+
+                // draw charts
+                drawChart(
+                    {
+                        'x': response['ap_deg_bins'],
+                        'y': response['ap_deg_counts']
+                    },
+                    'Articulation Points',
+                    'Articulation Point Degree Distribution',
+                    'apDegreeDistChart'
+                );
+                drawChart(
+                    {
+                        'x': response['bcc_size_bins'],
+                        'y': response['bcc_size_counts']
+                    },
+                    'Biconnected Components',
+                    'BCC Size Distribution',
+                    'bccSizeDistChart'
+                );
+
+                // additional bcc tree info
+                // bccTreeInfoDiv
+                var num_ap = response['ap_deg_counts']
+                    .reduce(function(a, b) { return a + b; }, 0);
+
+                var num_bcc_metanodes = response['bcc_size_counts']
+                    .reduce(function(a, b) { return a + b; }, 0);
+
+                $('#bccTreeInfoDiv').html(
+                    'BCC Tree Statistics -- <br>' +
+                    'Nodes: ' + nodes.length + ' | Edges: ' + edges.length + '<br>' +
+                    '&emsp;Articulation Points: ' + num_ap + '<br>' +
+                    '&emsp;BCC Metanodes: ' + num_bcc_metanodes
+                )
+
+                $('#bccTreeContainer').css('display', 'block');
+            },
+            complete: function() {
+                $('#computeBccTreeBtn :button').prop('disabled', false);
+            } 
+        })
+    })
 
     $('#getIntraClusterDescriptionsBtn').click(function(e) {
         // var nodeID = $('#landmarksTable tr.selected').attr('data-value');
@@ -1036,12 +1127,12 @@
         drawChart(
             {'x': bins, 'y': counts},
             'Vertices',
-            'degreeDistChart',
-            'Degree Distribution'
+            'Degree Distribution',
+            'degreeDistChart'
         );
     }
 
-    function drawChart(data, seriesText, container, titleText,) {
+    function drawChart(data, seriesText, titleText, container,) {
         Highcharts.chart(container, {
             chart: {
                 type: 'column',

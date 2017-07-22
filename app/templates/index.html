@@ -195,6 +195,11 @@
                     </div>
                     <div>
                         <button id="landmarksBtn" type="button">Landmarks</button>
+                        <select id="clusteringkMethodSelect">
+                        {% for file in clustering_files %}
+                            <option value="{{ file }}">{{ file }}</option>
+                        {% endfor %}
+                        </select>
                     </div>
                     <div>
                         <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
@@ -209,6 +214,7 @@
                     <div>
                         <button id="removeChildrenBtn" type="button">Remove Children</button>
                     </div>
+                    <br>
                     <div>
                         <button id="computeNodeConnectedComponentsBtn"type="button">Connected Components</button>
                     </div>
@@ -750,7 +756,8 @@
             type: 'GET',
             url: '/cluster-by-landmarks',
             data: {
-                fullyQualifiedLabel: fullyQualifiedLabel
+                fullyQualifiedLabel: fullyQualifiedLabel,
+                filename: $('#clusteringkMethodSelect').val()
             },
             success: function(response) {
                 if (response.hasOwnProperty('msg')) {

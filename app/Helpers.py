@@ -148,7 +148,7 @@ def bcc_tree(G, vlist, elist):
     }
 
 
-def print_adjacency_list(G, vlist, elist):
+def landmark_clustering(G, vlist, elist, cmd=None):
     vfilt = G.new_vp('bool', vals=False)
     vfilt.a[vlist] = True
     G.set_vertex_filter(vfilt)
@@ -159,7 +159,7 @@ def print_adjacency_list(G, vlist, elist):
     # cmd = './app/spine_clustering.bin'
     # cmd = './app/spine_clustering_v2.bin'
     # cmd = './app/test_io.bin'
-    cmd = './app/spine_v5.bin'
+    # cmd = './app/spine_v5.bin'
     p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
 
     for v in G.vertices():

@@ -16,6 +16,7 @@ from PartitionMethods import *
 
 GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
+CLUSTER_FILES_PATH = 'app/cluster_methods/'
 OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,
@@ -55,9 +56,16 @@ def index():
         if file.endswith('.pkl'):
             tree_files.append(file)
 
+    # find all available cluster method binaries
+    clustering_files = []
+    for file in os.listdir(CLUSTER_FILES_PATH):
+        if file.endswith('.bin'):
+            clustering_files.append(file)
+
     return render_template('index.html',
                            graph_files=graph_files,
-                           tree_files=tree_files)
+                           tree_files=tree_files,
+                           clustering_files=clustering_files,)
 
 
 @app.route('/load-graph')
@@ -246,15 +254,15 @@ def cluster_by_landmarks():
         return jsonify({'msg': 'No graph loaded'})
 
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    filename = request.args.get('filename')
+    cmd = CLUSTER_FILES_PATH + filename
+
     vlist, elist = get_indices(fully_qualified_label)
-    # NOTE: handled on front end
-    # if len(vlist) > 2194:
-    #     return jsonify({'msg': 'Graph is too large to visualize'})
 
     Mem.current_view['vlist'] = vlist
     Mem.current_view['elist'] = elist
 
-    response = print_adjacency_list(Mem.gm.g, vlist, elist)
+    response = landmark_clustering(Mem.gm.g, vlist, elist, cmd)
     return jsonify(response)
 
 

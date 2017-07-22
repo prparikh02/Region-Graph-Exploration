@@ -111,6 +111,25 @@
         overflow: auto;
     }
 
+    .leafNodeCircle {
+        border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        background: #228B22;
+        border: 1px solid #000;
+        display: inline-block;
+    }
+
+    .intermediateNodeCircle {
+        border-radius: 50%;
+        width: 12px;
+        height: 12px;
+        background: #7EC0EE;
+        border: 1px solid #000;
+        display: inline-block;
+    }
+
+    
 </style>
 
 <body>
@@ -268,22 +287,6 @@
         </div>
     </div>
 
-     <div id="bccTreeContainer" style="clear: both; float: left; display: none;">
-        <div class="canvasContainers">
-            <h3>BCC Tree</h3>
-            <div style="float: left;">
-                <div class="networkCanvasContainer">
-                    <div id="bccTreeCanvas"></div>
-                </div>
-            </div>
-            <div style="float: left;">
-                <div id="apDegreeDistChart" class="distributionChart"></div>
-                <div id="bccSizeDistChart" class="distributionChart"></div>
-                <div id="bccTreeInfoDiv" class="additionalInfoDiv"></div>
-            </div>
-        </div>
-    </div> 
-
     <div id="clusterDescriptions" style="display: none;">
         <div id="landmarksTableContainer">
             <table id="landmarksTable" style="table-layout: fixed;">
@@ -320,6 +323,22 @@
             <button id="getIntraClusterDescriptionsBtn" type="button">Get Intra-cluster Descriptions</button>
         </div>
     </div>
+
+    <div id="bccTreeContainer" style="clear: both; float: left; display: none;">
+        <div class="canvasContainers">
+            <h3>BCC Tree</h3>
+            <div style="float: left;">
+                <div class="networkCanvasContainer">
+                    <div id="bccTreeCanvas"></div>
+                </div>
+            </div>
+            <div style="float: left;">
+                <div id="apDegreeDistChart" class="distributionChart"></div>
+                <div id="bccSizeDistChart" class="distributionChart"></div>
+                <div id="bccTreeInfoDiv" class="additionalInfoDiv"></div>
+            </div>
+        </div>
+    </div> 
 
 </body>
 

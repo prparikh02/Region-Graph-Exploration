@@ -117,7 +117,8 @@ def node_children():
                 'short_label': short_label,
                 'num_vertices': V,
                 'num_edges': E,
-                'vlogv': float_formatter(V * np.log2(V))
+                'vlogv': float_formatter(V * np.log2(V)),
+                'is_leaf': child.is_leaf(),
             })
         return render_template('treeNodes.html', node_info=node_info)
 
@@ -139,7 +140,8 @@ def node_children():
             'short_label': short_label,
             'num_vertices': V,
             'num_edges': E,
-            'vlogv': float_formatter(V * np.log2(V))
+            'vlogv': float_formatter(V * np.log2(V)),
+            'is_leaf': child.is_leaf(),
         })
 
     return render_template('treeNodes.html', node_info=node_info)

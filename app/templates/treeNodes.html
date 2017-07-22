@@ -3,7 +3,8 @@
     <li> 
         <span class="node" 
               data-value="{{ data['fully_qualified_label'] }}">
-              {{ data['short_label'] }} --> |V|: {{ data['num_vertices'] }}, |E|: {{ data['num_edges'] }}, |V|log|V|: {{ data['vlogv'] }}
+              {{ data['short_label'] }} --> |V|: {{ data['num_vertices'] }}, |E|: {{ data['num_edges'] }}, |V|log|V|: {{ data['vlogv'] }} 
+              <div class="{% if data['is_leaf'] %} leafNodeCircle {% else %} intermediateNodeCircle {% endif %}"></div>
         </span>
     </li>
 {% endfor %}

@@ -168,7 +168,7 @@ def edge_peel(G, vertex_indices=None, edge_indices=None):
         err_msg = 'Must provide either vertex indices or edge indices'
         raise ValueError(err_msg)
 
-    cmd = './app/graph_peeling.bin -t core -o core'
+    cmd = './app/bin/graph_peeling.bin -t core -o core'
 
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
@@ -256,7 +256,7 @@ def peel_one(G, vertex_indices=None, edge_indices=None):
         err_msg = 'Must provide either vertex indices or edge indices'
         raise ValueError(err_msg)
 
-    cmd = './app/graph_peeling.bin -t core -o core'
+    cmd = './app/bin/graph_peeling.bin -t core -o core'
 
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)

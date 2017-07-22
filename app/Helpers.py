@@ -5,6 +5,47 @@ from collections import Counter
 from subprocess import Popen, PIPE
 
 
+def kcore_decomposition(G, vlist=[], elist=[]):
+    '''
+    Synonymous with graph vertex peeling.
+    Returns dict with keys as kcore values and
+        values as vertex IDs.
+    '''
+    # initiate filters, if necessary
+    if vlist or elist:
+        vp = G.new_vp('bool', vals=False)
+        ep = G.new_ep('bool', vals=False)
+        if vlist is []:
+            vlist = np.ones_like(vp.a)
+        elif elist is []:
+            elist = np.ones_like(ep.a)
+        vp.a[vlist] = True
+        ep.a[elist] = True
+        G.set_vertex_filter(vp)
+        G.set_edge_filter(ep)
+
+    cmd = './app/bin/graph_peeling.bin -t core -o core'
+    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
+    for e in G.edges():
+        p.stdin.write('{} {}\n'.format(e.source(), e.target()))
+        p.stdin.flush()
+    p.stdin.close()
+
+    peel_partition = {}
+    while True:
+        line = p.stdout.readline()
+        if line == '':
+            break
+        if not line.startswith('Core'):
+            continue
+        peel, vertices = line.split(' = ')
+        peel = int(peel.split('_')[-1])
+        vertices = vertices.strip().split()
+        peel_partition[peel] = vertices
+
+    return peel_partition
+
+
 def statistics(G):
     if not G:
         return 'No Graph Loaded'
@@ -32,10 +73,16 @@ def statistics(G):
     else:
         num_singletons = 0
 
-    # TODO: Replace this with C++ peel implementation
-    kcore = gt.kcore_decomposition(G)
-    C = Counter(kcore.a[v_idx])
-    peel_bins, peel_counts = [list(t) for t in zip(*C.items())]
+    if G.get_vertex_filter()[0] and G.get_edge_filter()[0]:
+        # Always correct, but much slower
+        peel_partition = kcore_decomposition(G)
+        peel_bins = sorted(peel_partition.keys())
+        peel_counts = [len(peel_partition[k]) for k in peel_bins]
+    else:
+        # Very fast, but unstable (not always accurate) for graphs with filters
+        kcore = gt.kcore_decomposition(G)
+        C = Counter(kcore.a[v_idx])
+        peel_bins, peel_counts = [list(t) for t in zip(*C.items())]
 
     vlogv = G.num_vertices() * np.log2(G.num_vertices())
 
@@ -156,10 +203,6 @@ def landmark_clustering(G, vlist, elist, cmd=None):
     efilt.a[elist] = True
     G.set_edge_filter(efilt)
 
-    # cmd = './app/spine_clustering.bin'
-    # cmd = './app/spine_clustering_v2.bin'
-    # cmd = './app/test_io.bin'
-    # cmd = './app/spine_v5.bin'
     p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
 
     for v in G.vertices():

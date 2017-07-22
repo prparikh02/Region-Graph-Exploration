@@ -16,7 +16,7 @@ from PartitionMethods import *
 
 GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
-CLUSTER_FILES_PATH = 'app/cluster_methods/'
+CLUSTER_FILES_PATH = 'app/bin/cluster_methods/'
 OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,

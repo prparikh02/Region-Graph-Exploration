@@ -267,6 +267,26 @@ def landmark_clustering(G, vlist, elist, cmd=None):
     }
 
 
+def save_adjacency(G, vlist, elist, filename):
+    # get proper indices
+    vp = G.new_vp('bool', vals=False)
+    ep = G.new_ep('bool', vals=False)
+    vp.a[vlist] = True
+    ep.a[elist] = True
+    G.set_vertex_filter(vp)
+    G.set_edge_filter(ep)
+
+    with open(filename, 'w') as f:
+        for v in G.vertices():
+            neighbors = [u for u in v.out_neighbours()]
+            # First column for v; following columns are neighbors.
+            # NOTE: Adjacency list is redundant for undirected graphs
+            out_str = ('{} ' +
+                       ('{} ' * len(neighbors))[:-1] +
+                       '\n').format(v, *neighbors)
+            f.write(out_str)
+
+
 def to_vis_json(G, filename=None):
     nodes = []
     for v in G.vertices():

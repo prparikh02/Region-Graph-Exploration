@@ -17,6 +17,7 @@ from PartitionMethods import *
 GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
 CLUSTER_FILES_PATH = 'app/bin/cluster_methods/'
+ADJACENCY_OUT_PATH = 'app/adjacency_out/'
 OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,
@@ -472,6 +473,26 @@ def compute_bcc_tree():
     vlist, elist = get_indices(fully_qualified_label)
 
     return jsonify(bcc_tree(Mem.gm.g, vlist, elist))
+
+
+@app.route('/save-adjacency-list')
+def save_adjacency_list():
+    if Mem.T is None:
+        return jsonify({'msg': 'No hierarchy tree loaded'})
+    if Mem.gm.g is None:
+        return jsonify({'msg': 'No graph loaded'})
+
+    fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    vlist, elist = get_indices(fully_qualified_label)
+    print len(vlist), len(elist)
+
+    filename = ADJACENCY_OUT_PATH + fully_qualified_label + '.txt'
+    try:
+        save_adjacency(Mem.gm.g, vlist, elist, filename)
+    except Exception as e:
+        return jsonify({'msg': str(e)})
+
+    return jsonify({'msg': 'Adjacency saved as {}'.format(filename)})
 
 
 def get_indices(fully_qualified_label):

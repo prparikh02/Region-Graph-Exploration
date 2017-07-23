@@ -223,6 +223,9 @@
                     <div>
                         <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
                     </div>
+                    <div>
+                        <button id="saveAdjacencyListBtn" type="button">Save Adjacency List</button>
+                    </div>
                 </div>
                 <br/>
                 
@@ -684,6 +687,16 @@
         }
     });
 
+    $('body').on('click', '#clustersTable tr', function(e) {
+        e.preventDefault();
+        console.log($(this).val());
+        if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+        } else {
+            $(this).addClass('selected').siblings().removeClass('selected');
+        }
+    });
+
     $('#getNodeChildrenBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var fullyQualifiedLabel = node.attr('data-value');
@@ -885,6 +898,35 @@
             } 
         })
     })
+
+    $('#saveAdjacencyListBtn').click(function(e) {
+        e.preventDefault();
+        var node = '',
+            fullyQualifiedLabel = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            node = $('#htreeTableDiv tr.selected');
+        }
+        fullyQualifiedLabel = node.attr('data-value');
+
+        $('#saveAdjacencyListBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/save-adjacency-list',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                }
+            },
+            complete: function() {
+                $('#saveAdjacencyListBtn :button').prop('disabled', false);
+            }
+        });
+    });
 
     $('#getIntraClusterDescriptionsBtn').click(function(e) {
         // var nodeID = $('#landmarksTable tr.selected').attr('data-value');

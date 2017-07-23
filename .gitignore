@@ -1,6 +1,7 @@
 *.pyc
 app/data/graphs/*
 app/data/trees/*
+app/adjacency_out/*
 .ipynb_checkpoints/
 scripts/
 graphs.txt

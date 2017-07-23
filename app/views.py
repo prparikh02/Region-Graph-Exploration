@@ -73,7 +73,11 @@ def load_graph():
     Mem.gm = GraphManager(None)
     filename = GRAPH_FILES_PATH + request.args.get('filename')
     G = Mem.gm.create_graph(graph_file=filename)
+    notes = ''
+    if 'notes' in G.graph_properties:
+        notes = G.graph_properties['notes']
     return render_template('overallGraphStats.html',
+                           notes=notes,
                            **statistics(G))
 
 

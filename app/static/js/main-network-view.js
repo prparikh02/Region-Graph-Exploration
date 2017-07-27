@@ -42,7 +42,7 @@ function redrawAll(container='networkCanvas') {
                     // originall 8, 30
                     min: 20,
                     max: 50,
-                    drawThreshold: 10,
+                    drawThreshold: 5,
                     maxVisible: 50
                 }
             },
@@ -115,6 +115,7 @@ function redrawAll(container='networkCanvas') {
     network.on('click', neighbourhoodHighlight);
     network.on('doubleClick', resolveDoubleClick);
     network.on('hoverNode', resolveHoverNode);
+    network.on('dragEnd', toggleFixNodePosition);
 }
 
 function resolveDoubleClick(params) {
@@ -191,6 +192,24 @@ function fetch_node_info(node_id) {
             $('#nodeInfo').append('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });
+}
+
+function toggleFixNodePosition(params) {
+    if (params['nodes'].length < 1) {
+        return;
+    }
+
+    // fix/unfix node position if dragged with ctrl key held down
+    if (params['event']['srcEvent']['ctrlKey']) {
+        var nodeID = params['nodes'][0];
+        var node = nodesDataset.get(nodeID);
+        if (node.hasOwnProperty('fixed')) {
+            node['fixed'] = !node['fixed'];
+        } else {
+            node['fixed'] = true;
+        }
+        nodesDataset.update(node);
+    }
 }
 
 function remapNodeSizes(nodes) {

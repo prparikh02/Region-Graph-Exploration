@@ -45,6 +45,20 @@
         border: 1px solid lightgray;
     }
 
+    #htreeManipulationControls {
+        float: left;
+        margin-left: 5px;
+        height: 400px;
+    }
+
+    #htreeNodeChildrenDistributionChart {
+        float: left;
+        clear: both;
+        width: 800px;
+        height: 200px;
+        border: 1px solid lightgray;
+    }
+
     .collapsibleList li {
         list-style-image : url('/static/css/button.png');
         cursor: pointer;
@@ -211,7 +225,7 @@
                 <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
             </div>
         </div>
-        <div style="float: left; margin-left: 5px;">
+        <div id="htreeManipulationControls">
             <div id="treeButtons">
                 <div id="displayGraphButtons">
                     <div>
@@ -258,7 +272,9 @@
                         <button id="computeKConnectedComponentsBtn" type="button">k Connected Components</button>
                     </div>
                 </div>
+            </div>
         </div>
+        <div id="htreeNodeChildrenDistributionChart"></div>
     </div>
 
     <div style="clear: both; float: left;">
@@ -726,7 +742,28 @@
                 fullyQualifiedLabel: fullyQualifiedLabel
             },
             success: function(response) {
+                // populate hierarchy tree nodes
+                node.nextAll().remove();
                 node.after(response['tree_nodes_html']);
+
+                // make children size distribution chart
+                // TODO: Switch between edge distr and node distr
+                var titleText = 'Tree Node Children Size Distribution';
+                var node_info = response['node_info'];
+                var chartData = [];
+                for (var i = 0; i < node_info.length; i++) {
+                    chartData.push({
+                        name: node_info[i]['short_label'],
+                        data: [node_info[i]['num_vertices']]
+                    });
+                }
+                chartData.reverse();
+
+                drawTreeNodeChildrenDistributionChart(
+                    chartData,
+                    'htreeNodeChildrenDistributionChart',
+                    titleText
+                );
             },
             complete: function() {
                 $('#getNodeChildrenBtn :button').prop('disabled', false);
@@ -1259,6 +1296,51 @@
                 name: seriesText,
                 data: data['y']
             }]
+        });
+    }
+
+    function drawTreeNodeChildrenDistributionChart(data, container, titleText,) {
+        Highcharts.chart(container, {
+            chart: {
+                type: 'bar',
+                zoomType: 'y'
+            },
+            title: {
+                text: titleText
+            },
+            xAxis: {
+                visible: false
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Cumulative'
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            plotOptions: {
+                series: {
+                    stacking: 'normal'
+                },
+                bar: {
+                    dataLabels: {
+                        enabled: true,
+                        distance : -50,
+                        formatter: function() {
+                            var dlabel = this.series.name + '<br/>';
+                            dlabel += Math.round(this.percentage*100)/100 + ' %';
+                                return dlabel
+                        },
+                        style: {
+                            color: 'white',
+                        },
+                    },
+                    
+                },
+            },
+            series: data
         });
     }
 

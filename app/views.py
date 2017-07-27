@@ -139,7 +139,10 @@ def node_children():
 
     tree_nodes_html = render_template('treeNodes.html', node_info=node_info)
 
-    return jsonify({'tree_nodes_html': tree_nodes_html})
+    return jsonify({
+        'tree_nodes_html': tree_nodes_html,
+        'node_info': node_info,
+    })
 
 
 @app.route('/remove-hnode-children')

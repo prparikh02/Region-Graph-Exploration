@@ -124,9 +124,9 @@ def bcc_tree(G, vlist, elist):
     # get proper indices
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
-    if vlist is [] or not vlist:
+    if vlist is [] or vlist is None:
         vlist = np.ones_like(vp.a)
-    if elist is [] or not elist:
+    if elist is [] or elist is None:
         elist = np.ones_like(ep.a)
     vp.a[vlist] = True
     ep.a[elist] = True
@@ -175,6 +175,7 @@ def bcc_tree(G, vlist, elist):
     num_components = len(np.unique(comp.a))
     assert Gp.num_edges() == Gp.num_vertices() - num_components
 
+    # TODO: Handle no articulation points (single BCC)
     # articulation point degree distribution
     ap_degrees = [v.out_degree() for v in ap_list]
     ap_deg_bins, ap_deg_counts = \

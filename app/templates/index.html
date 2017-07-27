@@ -30,6 +30,11 @@
         margin: 5px;
     }
 
+    #htreeContainer {
+        float: left;
+        width: 960px;
+    }
+
     #hierarchyTree {
         width: 800px;
         height: 400px;
@@ -173,7 +178,7 @@
         <div>
             <button id="toggleHtreeBtn" type="button">Show Table</button>
         </div>
-        <div id="htreeContainer" style="float: left; width: 1020px;">
+        <div id="htreeContainer">
             <div class="toggleHtreeContainer">
                 <div id="hierarchyTree">
                     <ul id="hierarchyTreeRoot" class="collapsibleList">
@@ -689,12 +694,25 @@
 
     $('body').on('click', '#clustersTable tr', function(e) {
         e.preventDefault();
-        console.log($(this).val());
         if ($(this).hasClass('selected')) {
             $(this).removeClass('selected');
         } else {
             $(this).addClass('selected').siblings().removeClass('selected');
         }
+        var vertex_label = $(this).children('td').eq(0).text();
+
+        var updateArray = [];
+        for (nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            if (node['label'] == vertex_label) {
+                node['color'] = undefined;
+            } else {
+                node['color'] = 'rgba(200,200,200,0.5)';
+            }
+            updateArray.push(node);
+        }
+        nodesDataset.update(updateArray);
+        highlightActive = true;
     });
 
     $('#getNodeChildrenBtn').on('click', function(e) {
@@ -708,7 +726,7 @@
                 fullyQualifiedLabel: fullyQualifiedLabel
             },
             success: function(response) {
-                node.after(response);
+                node.after(response['tree_nodes_html']);
             },
             complete: function() {
                 $('#getNodeChildrenBtn :button').prop('disabled', false);
@@ -727,7 +745,7 @@
                 fullyQualifiedLabel: fullyQualifiedLabel
             },
             success: function(response) {
-                // node.after(response);
+                // TODO: Do something here...
                 console.log(response);
             },
             complete: function() {
@@ -862,18 +880,20 @@
                         'x': response['ap_deg_bins'],
                         'y': response['ap_deg_counts']
                     },
-                    'Articulation Points',
+                    'AP Degree',
                     'Articulation Point Degree Distribution',
-                    'apDegreeDistChart'
+                    'apDegreeDistChart',
+                    true
                 );
                 drawChart(
                     {
                         'x': response['bcc_size_bins'],
                         'y': response['bcc_size_counts']
                     },
-                    'Biconnected Components',
+                    'Biconnected Component Size',
                     'BCC Size Distribution',
-                    'bccSizeDistChart'
+                    'bccSizeDistChart',
+                    true
                 );
 
                 // additional bcc tree info
@@ -938,6 +958,7 @@
                                         rgbColor['b'] + ", " +
                                         0.50 + ");";
 
+        // TODO: SORT BY DEGREE
         var intraClusterNodes = [];
         for (nodeID in allNodes) {
             var node = allNodes[nodeID];
@@ -1194,13 +1215,14 @@
 
         drawChart(
             {'x': bins, 'y': counts},
-            'Vertices',
+            'Degree',
             'Degree Distribution',
-            'degreeDistChart'
+            'degreeDistChart',
+            true
         );
     }
 
-    function drawChart(data, seriesText, titleText, container,) {
+    function drawChart(data, seriesText, titleText, container, enableLegend=false) {
         Highcharts.chart(container, {
             chart: {
                 type: 'column',
@@ -1219,11 +1241,19 @@
                     text: 'Count'
                 }
             },
+            tooltip: {
+                formatter: function() {
+                    return '<b>' + this.y + '</b>'
+                }
+            },
             plotOptions: {
                 column: {
                     pointPadding: 0.2,
                     borderWidth: 0
                 }
+            },
+            legend: {
+                enabled: enableLegend
             },
             series: [{
                 name: seriesText,

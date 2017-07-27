@@ -32,8 +32,8 @@ client = MongoClient('localhost', 27017)
 # paper_md_coll = db['paper_metadata']
 db = client['danish_project']
 articles_coll = db['articles']
-named_entities_coll = db['named_entities']
-regions_coll = db['regions']
+named_entities_coll = db['named_entities_1991']
+regions_coll = db['regions_1991']
 
 
 class Mem:
@@ -111,31 +111,19 @@ def node_children():
         return 'No hierarchy tree loaded'
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
 
-    node_info = []
     if fully_qualified_label.lower() == 'root':
-        for child in Mem.T.root.children:
-            V = child.num_vertices()
-            E = child.num_edges()
-            short_label = child.label.split('|')[-1]
-            node_info.append({
-                'fully_qualified_label': child.label,
-                'short_label': short_label,
-                'num_vertices': V,
-                'num_edges': E,
-                'vlogv': float_formatter(V * np.log2(V)),
-                'is_leaf': child.is_leaf(),
-            })
-        return render_template('treeNodes.html', node_info=node_info)
+        node = Mem.T.root
+    else:
+        # traverse tree
+        sub_ids = fully_qualified_label.split('|')
+        if sub_ids[0].lower() == 'root':
+            sub_ids = sub_ids[1:]
+        node = Mem.T.root
+        for s in xrange(len(sub_ids)):
+            idx = int(sub_ids[s].split('_')[-1])
+            node = node.children[idx]
 
-    # traverse tree
-    sub_ids = fully_qualified_label.split('|')
-    if sub_ids[0].lower() == 'root':
-        sub_ids = sub_ids[1:]
-    node = Mem.T.root
-    for s in xrange(len(sub_ids)):
-        idx = int(sub_ids[s].split('_')[-1])
-        node = node.children[idx]
-
+    node_info = []
     for child in node.children:
         V = child.num_vertices()
         E = child.num_edges()
@@ -149,7 +137,9 @@ def node_children():
             'is_leaf': child.is_leaf(),
         })
 
-    return render_template('treeNodes.html', node_info=node_info)
+    tree_nodes_html = render_template('treeNodes.html', node_info=node_info)
+
+    return jsonify({'tree_nodes_html': tree_nodes_html})
 
 
 @app.route('/remove-hnode-children')
@@ -484,7 +474,6 @@ def save_adjacency_list():
 
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
-    print len(vlist), len(elist)
 
     filename = ADJACENCY_OUT_PATH + fully_qualified_label + '.txt'
     try:

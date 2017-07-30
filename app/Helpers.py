@@ -3,47 +3,7 @@ import json
 import numpy as np
 from collections import Counter
 from subprocess import Popen, PIPE
-
-
-def kcore_decomposition(G, vlist=[], elist=[]):
-    '''
-    Synonymous with graph vertex peeling.
-    Returns dict with keys as kcore values and
-        values as vertex IDs.
-    '''
-    # initiate filters, if necessary
-    if vlist or elist:
-        vp = G.new_vp('bool', vals=False)
-        ep = G.new_ep('bool', vals=False)
-        if vlist is []:
-            vlist = np.ones_like(vp.a)
-        elif elist is []:
-            elist = np.ones_like(ep.a)
-        vp.a[vlist] = True
-        ep.a[elist] = True
-        G.set_vertex_filter(vp)
-        G.set_edge_filter(ep)
-
-    cmd = './app/bin/graph_peeling.bin -t core -o core'
-    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
-    for e in G.edges():
-        p.stdin.write('{} {}\n'.format(e.source(), e.target()))
-        p.stdin.flush()
-    p.stdin.close()
-
-    peel_partition = {}
-    while True:
-        line = p.stdout.readline()
-        if line == '':
-            break
-        if not line.startswith('Core'):
-            continue
-        peel, vertices = line.split(' = ')
-        peel = int(peel.split('_')[-1])
-        vertices = vertices.strip().split()
-        peel_partition[peel] = vertices
-
-    return peel_partition
+from HierarchicalPartitioningTree import PartitionTree, PartitionNode
 
 
 def statistics(G):
@@ -73,12 +33,13 @@ def statistics(G):
     else:
         num_singletons = 0
 
-    if G.get_vertex_filter()[0] and G.get_edge_filter()[0]:
+    if G.get_vertex_filter()[0] or G.get_edge_filter()[0]:
         # Always correct, but much slower
         peel_partition = kcore_decomposition(G)
         peel_bins = sorted(peel_partition.keys())
         peel_counts = [len(peel_partition[k]) for k in peel_bins]
     else:
+        # NOTE:
         # Very fast, but unstable (not always accurate) for graphs with filters
         kcore = gt.kcore_decomposition(G)
         C = Counter(kcore.a[v_idx])
@@ -101,171 +62,27 @@ def statistics(G):
     }
 
 
-def induce_subgraph(G, vlist, elist):
-    if not G:
-        return 'No graph loaded'
-
-    # get proper indices
-    vp = G.new_vp('bool', vals=False)
-    ep = G.new_ep('bool', vals=False)
-    if vlist is []:
-        vlist = np.ones_like(vp.a)
-    if elist is []:
-        elist = np.ones_like(ep.a)
-    vp.a[vlist] = True
-    ep.a[elist] = True
-    G.set_vertex_filter(vp)
-    G.set_edge_filter(ep)
-
-    return {'vis_data': to_vis_json(G)}
+def traverse_tree(T, fully_qualified_label):
+    if fully_qualified_label.lower() == 'root':
+        return T.root
+    sub_ids = fully_qualified_label.split('|')
+    if sub_ids[0].lower() == 'root':
+        sub_ids = sub_ids[1:]
+    node = T.root
+    for s in xrange(len(sub_ids)):
+        idx = int(sub_ids[s].split('_')[-1])
+        node = node.children[idx]
+    return node
 
 
-def bcc_tree(G, vlist, elist):
-    # get proper indices
-    vp = G.new_vp('bool', vals=False)
-    ep = G.new_ep('bool', vals=False)
-    if vlist is [] or vlist is None:
-        vlist = np.ones_like(vp.a)
-    if elist is [] or elist is None:
-        elist = np.ones_like(ep.a)
-    vp.a[vlist] = True
-    ep.a[elist] = True
-    G.set_vertex_filter(vp)
-    G.set_edge_filter(ep)
-
-    # label biconnected components
-    bcc, art, _ = gt.label_biconnected_components(G)
-
-    # create metagraph
-    Gp = gt.Graph(directed=False)
-    Gp.vp['count'] = Gp.new_vp('int', vals=-1)
-    Gp.vp['is_articulation'] = Gp.new_vp('bool', vals=False)
-    Gp.vp['id'] = Gp.new_vp('string', vals='')
-    Gp.ep['count'] = Gp.new_ep('int', vals=0)
-
-    # add bcc metanodes
-    # each bcc metanode will be indexed in Gp in increasing order of bcc id,
-    #     a scheme which is leveraged later below.
-    B = sorted(Counter(bcc.a[elist]).items())
-    for b, count in B:
-        v = Gp.add_vertex()
-        Gp.vp['count'][v] = count
-
-    # add articulation points and metagraph edges
-    elist_set = set(elist)
-    ap_list = [G.vertex(v) for v in np.where(art.a == 1)[0]]
-    for ap in ap_list:
-        v = Gp.add_vertex()
-        Gp.vp['count'][v] = 1
-        Gp.vp['is_articulation'][v] = True
-        # assign original vertex_index as art point's id
-        Gp.vp['id'][v] = str(G.vertex_index[ap])
-        for e in ap.out_edges():
-            # NOTE: Following if should never evaluate true...
-            if G.edge_index[e] not in elist_set:
-                continue
-            # add metagraph edge if not already present
-            meta_e = Gp.edge(v, Gp.vertex(bcc[e]))
-            if not meta_e:
-                meta_e = Gp.add_edge(v, Gp.vertex(bcc[e]))
-            Gp.ep['count'][meta_e] += 1
-
-    # assert bcc tree is, in fact, a tree
-    comp, _ = gt.label_components(G)
-    num_components = len(np.unique(comp.a))
-    assert Gp.num_edges() == Gp.num_vertices() - num_components
-
-    # TODO: Handle no articulation points (single BCC)
-    # articulation point degree distribution
-    ap_degrees = [v.out_degree() for v in ap_list]
-    ap_deg_bins, ap_deg_counts = \
-        zip(*sorted(Counter(ap_degrees).items()))
-
-    # bcc size distribution (no. of edges)
-    bcc_size_bins, bcc_size_counts = \
-        zip(*sorted(Counter(zip(*B)[-1]).items()))
-
-    vis_data = to_vis_json_bcc_tree(Gp)
-
-    return {
-        'vis_data': vis_data,
-        'ap_deg_bins': ap_deg_bins,
-        'ap_deg_counts': ap_deg_counts,
-        'bcc_size_bins': bcc_size_bins,
-        'bcc_size_counts': bcc_size_counts,
-    }
-
-
-def landmark_clustering(G, vlist, elist, cmd=None):
-    vfilt = G.new_vp('bool', vals=False)
-    vfilt.a[vlist] = True
-    G.set_vertex_filter(vfilt)
-    efilt = G.new_ep('bool', vals=False)
-    efilt.a[elist] = True
-    G.set_edge_filter(efilt)
-
-    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
-
-    for v in G.vertices():
-        neighbors = [u for u in v.out_neighbours()]
-        # First column for v; following columns are neighbors.
-        # NOTE: Adjacency list is redundant for undirected graphs
-        out_str = ('{} ' +
-                   ('{} ' * len(neighbors))[:-1] +
-                   '\n').format(v, *neighbors)
-        # yield out_str
-        p.stdin.write(out_str)
-        p.stdin.flush()
-    p.stdin.close()
-
-    # get landmarks and clusters
-    landmark_map = {}
-    cluster_assignment = {}
-    while True:
-        line = p.stdout.readline()
-        if line.strip() == '---':
-            break
-        v_idx, prev, nearest_landmark = [int(i) for i in line.strip().split()]
-        if nearest_landmark == -1:
-            landmark_map[v_idx] = len(landmark_map)
-            cluster_assignment[v_idx] = v_idx
-        else:
-            cluster_assignment[v_idx] = nearest_landmark
-    cluster_assignment = \
-        {k: landmark_map[v] for k, v in cluster_assignment.iteritems()}
-
-    # get spine
-    tree = []
-    while True:
-        line = p.stdout.readline()
-        if line == '':
-            break
-        v_idxs = line.strip().split()
-        # if int(v_idxs[-1]) not in landmark_map:
-        #     continue
-        branch = []
-        for i in xrange(len(v_idxs) - 1):
-            branch.append(G.edge(v_idxs[i], v_idxs[i + 1]))
-        tree.append(branch)
-
-    spine = set(tree[0])
-    spine_nodes = set()
-    for e in spine:
-        spine_nodes.add(e.source())
-        spine_nodes.add(e.target())
-
-    branches = set()
-    for branch in tree[1:]:
-        branches.update(branch)
-
-    vis_data = to_vis_json_cluster_map(G,
-                                       cluster_assignment,
-                                       landmark_map,
-                                       spine,
-                                       branches)
-    return {
-        'vis_data': vis_data
-    }
+def get_indices(T, fully_qualified_label):
+    node = traverse_tree(T, fully_qualified_label)
+    if len(node.vertex_indices) != 0:
+        vlist = node.vertex_indices
+        elist = node.edge_indices
+    else:
+        vlist, elist = PartitionTree.collect_indices(node)
+    return vlist, elist
 
 
 def save_adjacency(G, vlist, elist, filename):
@@ -286,6 +103,8 @@ def save_adjacency(G, vlist, elist, filename):
                        ('{} ' * len(neighbors))[:-1] +
                        '\n').format(v, *neighbors)
             f.write(out_str)
+
+    return {'msg': 'Adjacency saved as {}'.format(filename)}
 
 
 def to_vis_json(G, filename=None):

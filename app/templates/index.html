@@ -403,6 +403,7 @@
             success: function(response) {
                 $("#graphStatistics").html(response);
                 isGraphLoaded = true;
+                $('#primaryNetwork').removeClass('hidden');
                 if (isHtreeLoaded) {
                     $('#hierarchyTreeSection').removeClass('hidden');
                 }
@@ -433,8 +434,8 @@
                 );
                 CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
                 $('#saveTreeBtn').prop('disabled', false);
-                $('#hierarchyTreeSection').removeClass('hidden');
                 isHtreeLoaded = true;
+                $('#hierarchyTreeSection').removeClass('hidden');
                 if (isGraphLoaded) {
                     $('#primaryNetwork').removeClass('hidden');
                 }

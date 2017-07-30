@@ -4,11 +4,11 @@ import json
 import numpy as np
 import os
 from Queue import Queue
-from collections import Counter
 from flask import Flask, jsonify, render_template, request
 from app import app
 from gensim.summarization import summarize
 from GraphManager import GraphManager
+from Handlers import *
 from Helpers import *
 from pymongo import MongoClient
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
@@ -18,14 +18,6 @@ GRAPH_FILES_PATH = 'app/data/graphs/'
 TREE_FILES_PATH = 'app/data/trees/'
 CLUSTER_FILES_PATH = 'app/bin/cluster_methods/'
 ADJACENCY_OUT_PATH = 'app/adjacency_out/'
-OPERATIONS = {
-    'connected_components': connected_components,
-    'biconnected_components': biconnected_components,
-    'edge_peel': edge_peel,
-    'peel_one': peel_one,
-    'k_connected_components': k_connected_components
-}
-float_formatter = lambda x: '{:.2f}'.format(x)
 client = MongoClient('localhost', 27017)
 # db = client['citeseerx']
 # clusters_coll = db['clusters']
@@ -109,32 +101,10 @@ def save_tree():
 def node_children():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
 
-    if fully_qualified_label.lower() == 'root':
-        node = Mem.T.root
-    else:
-        # traverse tree
-        sub_ids = fully_qualified_label.split('|')
-        if sub_ids[0].lower() == 'root':
-            sub_ids = sub_ids[1:]
-        node = Mem.T.root
-        for s in xrange(len(sub_ids)):
-            idx = int(sub_ids[s].split('_')[-1])
-            node = node.children[idx]
+    response = get_node_children(Mem.T, fully_qualified_label)
+    assert 'node_info' in response
 
-    node_info = []
-    for child in node.children:
-        V = child.num_vertices()
-        E = child.num_edges()
-        short_label = child.label.split('|')[-1]
-        node_info.append({
-            'fully_qualified_label': child.label,
-            'short_label': short_label,
-            'num_vertices': V,
-            'num_edges': E,
-            'vlogv': float_formatter(V * np.log2(V)),
-            'is_leaf': child.is_leaf(),
-        })
-
+    node_info = response['node_info']
     tree_nodes_html = render_template('treeNodes.html', node_info=node_info)
 
     return jsonify({
@@ -144,90 +114,39 @@ def node_children():
 
 
 @app.route('/remove-hnode-children')
-def remove_node_children():
+def remove_hnode_children():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
-    if fully_qualified_label.lower() == 'root':
-        node = Mem.T.root
-    else:
-        # traverse tree
-        sub_ids = fully_qualified_label.split('|')
-        if sub_ids[0].lower() == 'root':
-            sub_ids = sub_ids[1:]
-        node = Mem.T.root
-        for s in xrange(len(sub_ids)):
-            idx = int(sub_ids[s].split('_')[-1])
-            node = node.children[idx]
-    node.remove_children()
-    return node.label
+
+    response = remove_node_children(Mem.T, fully_qualified_label)
+    assert 'node' in response
+
+    return response['node'].label
 
 
 @app.route('/decompose-by-operation')
 def decompose_by_operation():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     operation = request.args.get('operation')
-    if operation not in OPERATIONS:
-        return jsonify({'msg': 'Invalid operation'})
 
-    if fully_qualified_label.lower() == 'root':
-        node = Mem.T.root
-    else:
-        # traverse tree
-        sub_ids = fully_qualified_label.split('|')
-        if sub_ids[0].lower() == 'root':
-            sub_ids = sub_ids[1:]
-        node = Mem.T.root
-        for s in xrange(len(sub_ids)):
-            idx = int(sub_ids[s].split('_')[-1])
-            node = node.children[idx]
+    response = \
+        decompose_node(Mem.T, Mem.gm.g, fully_qualified_label, operation)
+    if 'msg' in response:
+        return jsonify(response)
+    assert 'node_info' in response
 
-    if not node.is_leaf():
-        return jsonify({'msg': 'Must select a leaf node'})
-
-    vlist = node.vertex_indices
-    elist = node.edge_indices
-    op = OPERATIONS[operation]
-    children = op(Mem.gm.g, vertex_indices=vlist, edge_indices=elist)
-
-    if not children:
-        msg = 'Could not decompose any further using method: {}'
-        return jsonify({'msg': msg.format(operation)})
-
-    # single child has same vlist and elist
-    if len(children) == 1:
-        child = children[0]
-        if (child.num_vertices() == len(vlist) and
-                child.num_edges() == len(elist)):
-            msg = 'Could not decompose any further using method: {}'
-            return jsonify({'msg': msg.format(operation)})
-
-    node.children = children
-    node_info = []
-    for idx, child in enumerate(node.children):
-        child.parent = node
-        child.label = child.parent.label + '|' + child.label
-        V = child.num_vertices()
-        E = child.num_edges()
-        short_label = child.label.split('|')[-1]
-        node_info.append({
-            'fully_qualified_label': child.label + '_' + str(idx),
-            'short_label': short_label,
-            'num_vertices': V,
-            'num_edges': E,
-            'vlogv': float_formatter(V * np.log2(V))
-        })
-
-    return render_template('treeNodes.html', node_info=node_info)
+    return render_template('treeNodes.html', **response)
 
 
 @app.route('/induce-hnode-subgraph')
 def induce_node_subgraph():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
-    vlist, elist = get_indices(fully_qualified_label)
+    vlist, elist = get_indices(Mem.T, fully_qualified_label)
     if len(vlist) > 2194:
         return jsonify({'msg': 'Graph is too large to visualize'})
 
     Mem.current_view['vlist'] = vlist
     Mem.current_view['elist'] = elist
+
     response = induce_subgraph(Mem.gm.g, vlist, elist)
     return jsonify(response)
 
@@ -238,8 +157,7 @@ def cluster_by_landmarks():
     filename = request.args.get('filename')
     cmd = CLUSTER_FILES_PATH + filename
 
-    vlist, elist = get_indices(fully_qualified_label)
-
+    vlist, elist = get_indices(Mem.T, fully_qualified_label)
     Mem.current_view['vlist'] = vlist
     Mem.current_view['elist'] = elist
 
@@ -329,12 +247,6 @@ def get_intracluster_summary():
     return jsonify(response)
 
 
-@app.route('/get-hierarchy-tree')
-def get_hierarchy_tree():
-    nodes = PartitionTree.traverse_dfs(Mem.T.root, return_stats=True)
-    return jsonify({'nodes': nodes})
-
-
 @app.route('/doc-lookup')
 def doc_lookup():
     # cluster_id = str(request.args.get('cluster_id'))
@@ -379,85 +291,44 @@ def doc_lookup():
     return jsonify(A)
 
 
+@app.route('/get-hierarchy-tree')
+def get_hierarchy_tree():
+    nodes = PartitionTree.traverse_dfs(Mem.T.root, return_stats=True)
+    return jsonify({'nodes': nodes})
+
+
 @app.route('/bfs-tree')
-def bfs_tree():
+def compute_bfs_tree():
     if not Mem.current_view:
         return jsonify({'msg': 'Current view not set'})
 
     # rootNodeID returned is actually vertex index in graph
-    v_idx = int(request.args.get('rootNodeID'))
+    root_idx = int(request.args.get('rootNodeID'))
     # O(|V|) operation; consider removing
-    assert v_idx in Mem.current_view['vlist']
+    assert root_idx in Mem.current_view['vlist']
     vlist = Mem.current_view['vlist']
     elist = Mem.current_view['elist']
 
-    G = Mem.gm.g
-    vfilt = G.new_vp('bool', vals=False)
-    vfilt.a[vlist] = True
-    G.set_vertex_filter(vfilt)
-    efilt = G.new_ep('bool', vals=False)
-    efilt.a[elist] = True
-    G.set_edge_filter(efilt)
-
-    N = G.num_vertices()
-    v = G.vertex(v_idx)
-    Q = Queue()
-    Q.put(v)
-    visited = set()
-    visited.add(v)
-    tree_edges = []
-    while Q.qsize() > 0:
-        v = Q.get()
-        if len(visited) == N:
-            break
-        for neighbor in v.out_neighbours():
-            if neighbor in visited:
-                continue
-            visited.add(neighbor)
-            Q.put(neighbor)
-            tree_edges.append(G.edge(v, neighbor))
-    return jsonify({G.edge_index[e]: 1 for e in tree_edges})
+    response = bfs_tree(Mem.gm.g, vlist, elist, root_idx)
+    return jsonify(response)
 
 
 @app.route('/compute-bcc-tree')
 def compute_bcc_tree():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
-    vlist, elist = get_indices(fully_qualified_label)
-
+    vlist, elist = get_indices(Mem.T, fully_qualified_label)
     return jsonify(bcc_tree(Mem.gm.g, vlist, elist))
 
 
 @app.route('/save-adjacency-list')
 def save_adjacency_list():
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
-    vlist, elist = get_indices(fully_qualified_label)
+    vlist, elist = get_indices(Mem.T, fully_qualified_label)
 
     filename = ADJACENCY_OUT_PATH + fully_qualified_label + '.txt'
     try:
-        save_adjacency(Mem.gm.g, vlist, elist, filename)
+        response = save_adjacency(Mem.gm.g, vlist, elist, filename)
     except Exception as e:
         return jsonify({'msg': str(e)})
 
-    return jsonify({'msg': 'Adjacency saved as {}'.format(filename)})
-
-
-def get_indices(fully_qualified_label):
-    if fully_qualified_label.lower() == 'root':
-        vlist = Mem.T.root.vertex_indices
-        elist = Mem.T.root.edge_indices
-    else:
-        # traverse tree
-        sub_ids = fully_qualified_label.split('|')
-        if sub_ids[0].lower() == 'root':
-            sub_ids = sub_ids[1:]
-        node = Mem.T.root
-        for s in xrange(len(sub_ids)):
-            idx = int(sub_ids[s].split('_')[-1])
-            node = node.children[idx]
-        if len(node.vertex_indices) != 0:
-            vlist = node.vertex_indices
-            elist = node.edge_indices
-        else:
-            vlist, elist = PartitionTree.collect_indices(node)
-
-    return vlist, elist
+    return jsonify(response)

@@ -107,8 +107,6 @@ def save_tree():
 
 @app.route('/get-hnode-children')
 def node_children():
-    if Mem.T is None:
-        return 'No hierarchy tree loaded'
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
 
     if fully_qualified_label.lower() == 'root':
@@ -147,8 +145,6 @@ def node_children():
 
 @app.route('/remove-hnode-children')
 def remove_node_children():
-    if Mem.T is None:
-        return 'No hierarchy tree loaded'
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     if fully_qualified_label.lower() == 'root':
         node = Mem.T.root
@@ -167,11 +163,6 @@ def remove_node_children():
 
 @app.route('/decompose-by-operation')
 def decompose_by_operation():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     operation = request.args.get('operation')
     if operation not in OPERATIONS:
@@ -230,11 +221,6 @@ def decompose_by_operation():
 
 @app.route('/induce-hnode-subgraph')
 def induce_node_subgraph():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
     if len(vlist) > 2194:
@@ -248,11 +234,6 @@ def induce_node_subgraph():
 
 @app.route('/cluster-by-landmarks')
 def cluster_by_landmarks():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     filename = request.args.get('filename')
     cmd = CLUSTER_FILES_PATH + filename
@@ -268,11 +249,6 @@ def cluster_by_landmarks():
 
 @app.route('/summarize-clusters')
 def summarize_clusters():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     # clusters = json.loads(request.args.get('clusters'))
     # response = {}
     # # NOTE: clusters not to be confused with clusters in citeseerx database
@@ -312,11 +288,6 @@ def summarize_clusters():
 # TODO: Consolidate with summarize_clusters function above
 @app.route('/get-intracluster-summary')
 def get_intracluster_summary():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     nodes = json.loads(request.args.get('nodes'))
 
     # response = {'nodes': {}}
@@ -360,9 +331,6 @@ def get_intracluster_summary():
 
 @app.route('/get-hierarchy-tree')
 def get_hierarchy_tree():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-
     nodes = PartitionTree.traverse_dfs(Mem.T.root, return_stats=True)
     return jsonify({'nodes': nodes})
 
@@ -413,10 +381,6 @@ def doc_lookup():
 
 @app.route('/bfs-tree')
 def bfs_tree():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
     if not Mem.current_view:
         return jsonify({'msg': 'Current view not set'})
 
@@ -457,11 +421,6 @@ def bfs_tree():
 
 @app.route('/compute-bcc-tree')
 def compute_bcc_tree():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
 
@@ -470,11 +429,6 @@ def compute_bcc_tree():
 
 @app.route('/save-adjacency-list')
 def save_adjacency_list():
-    if Mem.T is None:
-        return jsonify({'msg': 'No hierarchy tree loaded'})
-    if Mem.gm.g is None:
-        return jsonify({'msg': 'No graph loaded'})
-
     fully_qualified_label = request.args.get('fullyQualifiedLabel')
     vlist, elist = get_indices(fully_qualified_label)
 

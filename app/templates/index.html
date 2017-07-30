@@ -148,7 +148,14 @@
         display: inline-block;
     }
 
-    
+    .majorSection {
+        clear: both;
+        float: left;
+    }
+
+    .hidden {
+        display: none;
+    }
 </style>
 
 <body>
@@ -187,7 +194,7 @@
         </div>
     </div>
 
-    <div style="clear: both; float: left;">
+    <div id="hierarchyTreeSection" class="majorSection hidden">
         <h3>Hierarchy Tree</h3>
         <div>
             <button id="toggleHtreeBtn" type="button">Show Table</button>
@@ -277,7 +284,7 @@
         <div id="htreeNodeChildrenDistributionChart"></div>
     </div>
 
-    <div style="clear: both; float: left;">
+    <div id="primaryNetwork" class="majorSection hidden">
         <div class="canvasContainers">
             <h3>Network</h3>
             <div style="float: left;">
@@ -348,7 +355,7 @@
         </div>
     </div>
 
-    <div id="bccTreeContainer" style="clear: both; float: left; display: none;">
+    <div id="bccTreeContainer" class="majorSection hidden">
         <div class="canvasContainers">
             <h3>BCC Tree</h3>
             <div style="float: left;">
@@ -378,6 +385,9 @@
 <script src="/static/js/exporting.js"></script>
 
 <script>
+    var isGraphLoaded = false,
+        isHtreeLoaded = false;
+
     var edgesShown = true;
     $('#loadGraphBtn').on('click', function(e) {
         $('#graphSelect').prop('disabled', true);
@@ -392,6 +402,10 @@
             },
             success: function(response) {
                 $("#graphStatistics").html(response);
+                isGraphLoaded = true;
+                if (isHtreeLoaded) {
+                    $('#hierarchyTreeSection').removeClass('hidden');
+                }
             },
             complete: function() {
                 $('#graphSelect').prop('disabled', false);
@@ -419,6 +433,11 @@
                 );
                 CollapsibleLists.applyTo($('#hierarchyTreeRoot')[0]);
                 $('#saveTreeBtn').prop('disabled', false);
+                $('#hierarchyTreeSection').removeClass('hidden');
+                isHtreeLoaded = true;
+                if (isGraphLoaded) {
+                    $('#primaryNetwork').removeClass('hidden');
+                }
             },
             complete: function() {
                 $('#graphSelect').prop('disabled', false);
@@ -822,7 +841,8 @@
             },
             complete: function() {
                 $('#induceNodeSubgraphBtn :button').prop('disabled', false);
-                $('#bccTreeContainer').css('display', 'none');
+                // $('#bccTreeContainer').css('display', 'none');
+                $('#bccTreeContainer').addClass('hidden');
             }
         });
     });
@@ -868,7 +888,8 @@
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
                 $('#clusterDescriptions').show();
-                $('#bccTreeContainer').css('display', 'block');
+                // $('#bccTreeContainer').css('display', 'block');
+                $('#bccTreeContainer').removeClass('hidden');
             }
         });
     });
@@ -948,7 +969,8 @@
                     '&emsp;BCC Metanodes: ' + num_bcc_metanodes
                 )
 
-                $('#bccTreeContainer').css('display', 'block');
+                // $('#bccTreeContainer').css('display', 'block');
+                $('#bccTreeContainer').removeClass('hidden');
             },
             complete: function() {
                 $('#computeBccTreeBtn :button').prop('disabled', false);

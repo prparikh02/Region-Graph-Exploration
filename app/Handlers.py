@@ -102,6 +102,8 @@ def decompose_node(T, G, fully_qualified_label, operation):
             'vlogv': float_formatter(V * np.log2(V)),
             'is_leaf': child.is_leaf(),
         })
+    node.vertex_indices = []
+    node.edge_indices = []
 
     return {'node_info': node_info}
 

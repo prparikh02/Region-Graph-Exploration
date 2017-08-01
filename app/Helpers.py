@@ -33,17 +33,17 @@ def statistics(G):
     else:
         num_singletons = 0
 
-    # if G.get_vertex_filter()[0] or G.get_edge_filter()[0]:
-    #     # Always correct, but much slower
-    #     peel_partition = kcore_decomposition(G)
-    #     peel_bins = sorted(peel_partition.keys())
-    #     peel_counts = [len(peel_partition[k]) for k in peel_bins]
-    # else:
-    #     # NOTE:
-    #     # Very fast, but unstable (not always accurate) for graphs with filters
-    kcore = gt.kcore_decomposition(G)
-    C = Counter(kcore.a[v_idx])
-    peel_bins, peel_counts = [list(t) for t in zip(*C.items())]
+    if G.get_vertex_filter()[0] or G.get_edge_filter()[0]:
+        # Always correct, but much slower
+        peel_partition = kcore_decomposition(G)
+        peel_bins = sorted(peel_partition.keys())
+        peel_counts = [len(peel_partition[k]) for k in peel_bins]
+    else:
+        # NOTE:
+        # Very fast, but unstable (not always accurate) for graphs with filters
+        kcore = gt.kcore_decomposition(G)
+        C = Counter(kcore.a[v_idx])
+        peel_bins, peel_counts = [list(t) for t in zip(*C.items())]
 
     vlogv = G.num_vertices() * np.log2(G.num_vertices())
 

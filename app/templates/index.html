@@ -738,10 +738,12 @@
         var vertex_label = $(this).children('td').eq(0).text();
 
         var updateArray = [];
+        var selectedNode = null;
         for (nodeID in allNodes) {
             var node = allNodes[nodeID];
             if (node['label'] == vertex_label) {
                 node['color'] = undefined;
+                selectedNode = node;
             } else {
                 node['color'] = 'rgba(200,200,200,0.5)';
             }
@@ -749,6 +751,7 @@
         }
         nodesDataset.update(updateArray);
         highlightActive = true;
+        fetch_node_info(selectedNode['id']);
     });
 
     $('#getNodeChildrenBtn').on('click', function(e) {
@@ -884,7 +887,7 @@
                     redrawAll('networkCanvas');
                 }
                 degreeDistribution();
-                summarizeClusters();
+                getLandmarkRegions();
             },
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
@@ -1009,7 +1012,6 @@
     });
 
     $('#getIntraClusterDescriptionsBtn').click(function(e) {
-        // var nodeID = $('#landmarksTable tr.selected').attr('data-value');
         var groupID = parseInt($('#landmarksTable tr.selected td:nth-child(1)').text());
         var networkGroups = network['groups']['groups'];
         var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);
@@ -1367,7 +1369,7 @@
         });
     }
 
-    function summarizeClusters() {
+    function getLandmarkRegions() {
         var networkGroups = network['groups']['groups'];
         var clusters = {};
         for (nodeID in allNodes) {
@@ -1392,7 +1394,7 @@
         }
         $.ajax({
             type: 'GET',
-            url: '/summarize-clusters',
+            url: '/landmark-regions',
             data: {
                 clusters: JSON.stringify(clusters)
             },

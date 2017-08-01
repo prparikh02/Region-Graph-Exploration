@@ -254,47 +254,6 @@ def bcc_tree(G, vlist, elist):
     }
 
 
-def kcore_decomposition(G, vlist=[], elist=[]):
-    '''
-    Synonymous with graph vertex peeling.
-    Returns dict with keys as kcore values and
-        values as vertex IDs.
-    '''
-    # initiate filters, if necessary
-    if vlist or elist:
-        vp = G.new_vp('bool', vals=False)
-        ep = G.new_ep('bool', vals=False)
-        if vlist is []:
-            vlist = np.ones_like(vp.a)
-        elif elist is []:
-            elist = np.ones_like(ep.a)
-        vp.a[vlist] = True
-        ep.a[elist] = True
-        G.set_vertex_filter(vp)
-        G.set_edge_filter(ep)
-
-    cmd = './app/bin/graph_peeling.bin -t core -o core'
-    p = Popen([cmd], shell=True, stdout=PIPE, stdin=PIPE)
-    for e in G.edges():
-        p.stdin.write('{} {}\n'.format(e.source(), e.target()))
-        p.stdin.flush()
-    p.stdin.close()
-
-    peel_partition = {}
-    while True:
-        line = p.stdout.readline()
-        if line == '':
-            break
-        if not line.startswith('Core'):
-            continue
-        peel, vertices = line.split(' = ')
-        peel = int(peel.split('_')[-1])
-        vertices = vertices.strip().split()
-        peel_partition[peel] = vertices
-
-    return peel_partition
-
-
 def bfs_tree(G, vlist, elist, root_idx):
     # set filters
     vfilt = G.new_vp('bool', vals=False)

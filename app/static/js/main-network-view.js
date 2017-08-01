@@ -171,7 +171,7 @@ function fetch_node_info(node_id) {
         type: 'GET',
         url: '/doc-lookup',
         data: {
-            'cluster_id': node_label
+            'node_id': node_label
         },
         success: function (data) {
             console.log(data);

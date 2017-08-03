@@ -88,7 +88,7 @@ class TreeExploration(object):
         self.initialized = True
         return self.T.root
 
-    def explore_tree(self, root, threshold=256,
+    def explore_tree(self, root=None, threshold=256,
                      separate_peel_one=True, check_partition=False):
         '''
         Begin partitioning by recursively breaking nodes where |V| < threshold.
@@ -97,6 +97,9 @@ class TreeExploration(object):
         'check_partition' checks the integrity of the partitioning;
             considerably increases running time
         '''
+
+        if not root:
+            root = self.T.root
 
         if separate_peel_one:
             node = self._partition_peel_one(root)

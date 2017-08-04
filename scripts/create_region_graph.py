@@ -258,9 +258,10 @@ def find_regions(elem_assoc):
 
     'regions' -
         key: unique region id
-        value: map such that -
-            key: sets that generate the region
-            value: elements of the region
+        value: {
+            'sets': sets that generate the region
+            'elems': elements of the region
+        }
 
     returns 'regions'
     '''

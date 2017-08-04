@@ -30,7 +30,7 @@ def landmark_regions(clusters):
                 named_entities_coll.find({'_id': int(ne_id)})
             for named_entity in named_entities_cursor:
                 named_entities.append(named_entity['named_entity'])
-            response[landmark_id] = '| '.join(named_entities)
+        response[landmark_id] = '| '.join(named_entities)
         # =========================
 
         # =========================
@@ -41,7 +41,7 @@ def landmark_regions(clusters):
         #     elements_cursor = elements_coll.find({'_id': int(elem_id)})
         #     for elem in elements_cursor:
         #         elements.append(elem['content'])
-        #     response[landmark_id] = '| '.join(elements)
+        # response[landmark_id] = '| '.join(elements)
         # =========================
     # =========================
 
@@ -86,7 +86,7 @@ def intracluster_summary(nodes):
                 named_entities_coll.find({'_id': int(ne_id)})
             for named_entity in named_entities_cursor:
                 named_entities.append(named_entity['named_entity'])
-            response[region_id] = '| '.join(named_entities)
+        response[region_id] = '| '.join(named_entities)
         # =========================
 
         # =========================
@@ -97,7 +97,7 @@ def intracluster_summary(nodes):
         #     elements_cursor = elements_coll.find({'_id': int(elem_id)})
         #     for elem in elements_cursor:
         #         elements.append(elem['content'])
-        #     response[landmark_id] = '| '.join(elements)
+        # response[landmark_id] = '| '.join(elements)
         # =========================
     # =========================
 

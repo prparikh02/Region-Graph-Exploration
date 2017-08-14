@@ -155,9 +155,31 @@ def cluster_by_landmarks():
     return jsonify(response)
 
 
-@app.route('/landmark-regions')
+@app.route('/append-landmark-clusters', methods=['POST'])
+def append_landmark_clusters():
+    fully_qualified_label = request.form['fullyQualifiedLabel']
+    cluster_assignment = json.loads(request.form['cluster_assignment'])
+
+    vlist, elist = get_indices(Mem.T, fully_qualified_label)
+    # vlist = Mem.current_view['vlist']
+    # elist = Mem.current_view['elist']
+    response = make_landmark_cluster_children(Mem.gm.g,
+                                              Mem.T,
+                                              fully_qualified_label,
+                                              cluster_assignment)
+    if 'msg' in response:
+        return jsonify(response)
+    assert 'node_info' in response
+
+    return render_template('treeNodes.html', **response)
+
+
+@app.route('/landmark-regions', methods=['GET', 'POST'])
 def get_landmark_regions():
-    clusters = json.loads(request.args.get('clusters'))
+    if request.method == 'GET':
+        clusters = json.loads(request.args.get('clusters'))
+    else:
+        clusters = json.loads(request.form['clusters'])
     response = landmark_regions(clusters)
     return jsonify(response)
 
@@ -196,6 +218,12 @@ def compute_bfs_tree():
 
     response = bfs_tree(Mem.gm.g, vlist, elist, root_idx)
     return jsonify(response)
+
+
+@app.route('/compute-metagraph')
+def compute_metagraph():
+    fully_qualified_label = request.args.get('fullyQualifiedLabel')
+    return jsonify(metagraph(Mem.T, fully_qualified_label))
 
 
 @app.route('/compute-bcc-tree')

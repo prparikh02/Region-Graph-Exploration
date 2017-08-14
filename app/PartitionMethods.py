@@ -311,6 +311,59 @@ def peel_one(G):
     return children
 
 
+def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
+    if not isinstance(G, gt.Graph):
+        err_msg = 'G must be a graph_tool.Graph instance'
+        raise ValueError(err_msg)
+
+    G.clear_filters()
+    efilt = G.new_ep('bool', vals=False)
+    efilt.a[elist] = True
+    G.set_edge_filter(efilt)
+
+    cluster_assignment = {int(k): v for k, v in cluster_assignment.iteritems()}
+    # create reverse map
+    # k: cluster | v: list of vertex_ids
+    clusters = {}
+    for k, v in cluster_assignment.iteritems():
+        if v not in clusters:
+            clusters[v] = []
+        clusters[v].append(k)
+    # parses vertex ids as ints
+    clusters = {k: [int(i) for i in v] for k, v in clusters.iteritems()}
+
+    # cross edges and counts of metagraph
+    # k: tuple (v1, v2) | v: list of edge indices
+    cross_edges = {}
+    for e in G.edges():
+        src = cluster_assignment[G.vertex_index[e.source()]]
+        tar = cluster_assignment[G.vertex_index[e.target()]]
+        if src == tar:
+            continue
+        if (src, tar) in cross_edges:
+            cross_edges[(src, tar)].append(G.edge_index[e])
+        elif (tar, src) in cross_edges:
+            cross_edges[(tar, src)].append(G.edge_index[e])
+        else:
+            cross_edges[(src, tar)] = [G.edge_index[e]]
+
+    cluster_keys = sorted(clusters.keys())
+    children = []
+    for k in cluster_keys:
+        v_idx = clusters[k]
+        vfilt = G.new_vp('bool', vals=False)
+        vfilt.a[v_idx] = True
+        G.set_vertex_filter(vfilt)
+        e_idx = np.where(G.new_ep('bool', vals=True).a == 1)[0]
+        node = PartitionNode(vertex_indices=v_idx,
+                             edge_indices=e_idx,
+                             label='LMK_{}_{}'.format(k, len(children)),
+                             note='landmark cluster {}'.format(k))
+        children.append(node)
+
+    return children, cross_edges
+
+
 # TODO: Incomplete
 def k_connected_components(G, vertex_indices=None, edge_indices=None):
     '''

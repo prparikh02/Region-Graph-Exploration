@@ -3,7 +3,7 @@ app/data/graphs/*
 app/data/trees/*
 app/adjacency_out/*
 .ipynb_checkpoints/
+*.ipynb
 scripts/*.pkl
 graphs.txt
-spine_clustering_v2.bin
-test_io.bin
+*.bin

@@ -268,3 +268,31 @@ def to_vis_json_cluster_map(G,
         })
 
     return {'nodes': nodes, 'edges': edges}
+
+def to_vis_json_metagraph(metanodes, cross_edges):
+    nodes = []
+    for mn_id, node_info in metanodes.iteritems():
+        long_label = node_info['fully_qualified_label']
+        title_html = \
+            '<p>{}<br>|V|: {}<br>|E|: {}'.format(long_label,
+                                                 node_info['num_vertices'],
+                                                 node_info['num_edges'])
+        nodes.append({
+            'id': mn_id,
+            'label': node_info['short_label'],
+            'title': title_html,
+            'value': node_info['num_vertices'],
+        })
+
+    edges = []
+    for idx, (e, edge_indices) in enumerate(cross_edges.iteritems()):
+        value = len(edge_indices)
+        edges.append({
+            'id': idx,
+            'from': e[0],
+            'to': e[1],
+            'value': value,
+            'title': 'meta-edge size: {}'.format(value),
+        })
+
+    return {'nodes': nodes, 'edges': edges}

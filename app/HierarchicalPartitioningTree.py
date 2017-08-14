@@ -41,6 +41,9 @@ class PartitionTree(object):
         Q.put(root)
         while Q.qsize() > 0:
             node = Q.get()
+            # TODO: Newly created trees will have the cross_edge attribute
+            cross_edges = getattr(node, 'cross_edges', [])
+            elist.update(cross_edges)
             if node.is_leaf():
                 vlist.update(node.vertex_indices)
                 elist.update(node.edge_indices)
@@ -102,6 +105,7 @@ class PartitionNode(object):
         self.label = label
         self.parent = parent
         self.children = []
+        self.cross_edges = []
         partition_type = partition_type.lower()
         if partition_type not in ['vertex', 'edge', 'root']:
             err_msg = 'Partition type must be either \'{}\', \'{}\', or \'{}\''
@@ -159,6 +163,7 @@ class PartitionNode(object):
         self.edge_indices = elist
         assert len(self.vertex_indices) == self.num_vertices()
         assert len(self.edge_indices) == self.num_edges()
+        self.cross_edges = []
         self.children = []
 
     def induce_subgraph(self, G):

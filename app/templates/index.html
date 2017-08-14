@@ -245,6 +245,10 @@
                             <option value="{{ file }}">{{ file }}</option>
                         {% endfor %}
                         </select>
+                        <div style="margin-left: 5px">
+                            &#10230;
+                            <button id="computeClusterMetagraphBtn" type="button">Compute Metagraph</button>
+                        </div>
                     </div>
                     <div>
                         <button id="computeBccTreeBtn" type="button">Compute BCC Tree</button>
@@ -887,7 +891,10 @@
                     redrawAll('networkCanvas');
                 }
                 degreeDistribution();
-                getLandmarkRegions();
+                getLandmarkClusters();
+                appendLandmarkClusters(fullyQualifiedLabel,
+                                       response['cluster_assignment'],
+                                       node);
             },
             complete: function() {
                 $('#landmarksBtn :button').prop('disabled', false);
@@ -897,6 +904,45 @@
             }
         });
     });
+
+    $('#computeClusterMetagraphBtn').click(function(e) {
+        e.preventDefault();
+        var node = '',
+            fullyQualifiedLabel = '';
+        if ($('#htreeTableDiv').css('display') == 'none') {
+            node = $("#hierarchyTree li>span.selected");
+        } else {
+            // NOTE: This function available only through tree view, not table
+            // node = $('#htreeTableDiv tr.selected');
+            return;
+        }
+        fullyQualifiedLabel = node.attr('data-value');
+        $('#computeClusterMetagraphBtn :button').prop('disabled', true);
+        $.ajax({
+            type: 'GET',
+            url: '/compute-metagraph',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var vis_data = response['vis_data'];
+                var nodes = remapNodeSizes(vis_data['nodes'])
+                var edges = vis_data['edges'];
+                nodesDataset = new vis.DataSet(nodes);
+                edgesDataset = new vis.DataSet(edges);
+
+                // TODO: Temporarily borrow bccTreeCanvas div
+                redrawAll('bccTreeCanvas');
+            },
+            complete: function() {
+                $('#computeClusterMetagraphBtn :button').prop('disabled', false);
+            }
+        });
+    })
 
     $('#computeBccTreeBtn').click(function(e) {
         e.preventDefault();
@@ -1040,6 +1086,7 @@
             },
             success: function(response) {
                 if (response.hasOwnProperty('summary')) {
+                    // TODO: Summary is not quite good. We'll figure something out
                     console.log(response['summary']);
                 }
                 var rows = [];
@@ -1369,7 +1416,7 @@
         });
     }
 
-    function getLandmarkRegions() {
+    function getLandmarkClusters() {
         var networkGroups = network['groups']['groups'];
         var clusters = {};
         for (nodeID in allNodes) {
@@ -1420,6 +1467,28 @@
                     scrollId: 'landmarksTableContainer',
                     contentId: 'landmarksTableContentArea'
                 });
+            },
+            complete: function() { }
+        });
+    }
+
+    function appendLandmarkClusters(fullyQualifiedLabel, cluster_assignment, node) {
+        console.log(fullyQualifiedLabel);
+        console.log(cluster_assignment);
+        $.ajax({
+            type: 'POST',
+            url: '/append-landmark-clusters',
+            data: {
+                fullyQualifiedLabel: fullyQualifiedLabel,
+                cluster_assignment: JSON.stringify(cluster_assignment)
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    // alert(response['msg']);
+                    console.log(response['msg']);
+                    return;
+                }
+                node.after(response);
             },
             complete: function() { }
         });

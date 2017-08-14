@@ -76,7 +76,7 @@ def decompose_node(T, G, fully_qualified_label, operation):
 
     if not children:
         msg = 'Could not decompose any further using method: {}'
-        return jsonify({'msg': msg.format(operation)})
+        return {'msg': msg.format(operation)}
 
     # single child has same vlist and elist
     if len(children) == 1:
@@ -176,8 +176,85 @@ def landmark_clustering(G, vlist, elist, cmd):
                                        spine,
                                        branches)
     return {
-        'vis_data': vis_data
+        'vis_data': vis_data,
+        'cluster_assignment': cluster_assignment
     }
+
+
+def make_landmark_cluster_children(G, T, fully_qualified_label,
+                                   cluster_assignment):
+    node = traverse_tree(T, fully_qualified_label)
+    if not node.is_leaf():
+        msg = 'Node is not leaf. Cluster children will not be appended'
+        return {'msg': msg}
+
+    vlist, elist = get_indices(T, fully_qualified_label)
+    operation = landmark_cluster_partition
+    children, cross_edges = operation(G, vlist, elist, cluster_assignment)
+
+    if not children:
+        msg = 'Could not decompose any further using method: {}'
+        return {'msg': msg.format(operation)}
+
+    # single child has same vlist and elist
+    if len(children) == 1:
+        child = children[0]
+        if (child.num_vertices() == len(vlist) and
+                child.num_edges() == len(elist)):
+            msg = 'Could not decompose any further using method: {}'
+            return {'msg': msg.format(operation)}
+
+    node.cross_edges = cross_edges
+    node.children = children
+    node_info = []
+    for idx, child in enumerate(node.children):
+        child.parent = node
+        child.label = child.parent.label + '|' + child.label
+        V = child.num_vertices()
+        E = child.num_edges()
+        short_label = child.label.split('|')[-1]
+        node_info.append({
+            'fully_qualified_label': child.label + '_' + str(idx),
+            'short_label': short_label,
+            'num_vertices': V,
+            'num_edges': E,
+            'vlogv': float_formatter(V * np.log2(V)),
+            'is_leaf': child.is_leaf(),
+        })
+    node.vertex_indices = []
+    node.edge_indices = []
+
+    return {'node_info': node_info}
+
+
+def metagraph(T, fully_qualified_label):
+    node = traverse_tree(T, fully_qualified_label)
+    if node.is_leaf():
+        msg = 'Node is a leaf. No metagraph can be produced.'
+        return {'msg': msg}
+    if len(node.cross_edges) == 0:
+        msg = 'No cross edges, i.e. no relation between children.'
+        return {'msg': msg}
+
+    cross_edges = node.cross_edges
+    metanodes = {}
+    for child in node.children:
+        # grab numerical value of child node
+        # NOTE: should really be the same as [-1], but [-2] makes more
+        #       logical sense in this case.
+        short_label = child.label.split('|')[-1]
+        mn_id = short_label.split('_')[-2]
+        metanodes[mn_id] = {
+            'id': mn_id,
+            'fully_qualified_label': child.label,
+            'short_label': short_label,
+            'num_vertices': child.num_vertices(),
+            'num_edges': child.num_edges(),
+        }
+
+    vis_data = to_vis_json_metagraph(metanodes, cross_edges)
+
+    return {'vis_data': vis_data}
 
 
 def bcc_tree(G, vlist, elist):

@@ -45,5 +45,6 @@ if __name__ == '__main__':
             'depth': len(info['sets']),
             'size': len(info['elems']),
             'elements': {e: 0 for e in info['elems']},
+            'sets': {s: 0 for s in info['sets']},
         })
     collection.insert_many(A)

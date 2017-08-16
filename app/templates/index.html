@@ -229,7 +229,7 @@
                         </table>
                     </div>
                 </div>
-                <button id="htreeTableBtn" type="button">Load Hierarchy Table</button>
+                <button id="htreeTableBtn" type="button">(Re)Load Hierarchy Table</button>
             </div>
         </div>
         <div id="htreeManipulationControls">
@@ -1062,9 +1062,9 @@
         var networkGroups = network['groups']['groups'];
         var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);
         var rgbColorString = "rgba(" + rgbColor['r'] + ", " + 
-                                        rgbColor['g'] + ", " + 
-                                        rgbColor['b'] + ", " +
-                                        0.50 + ");";
+                                       rgbColor['g'] + ", " + 
+                                       rgbColor['b'] + ", " +
+                                       0.50 + ");";
 
         // TODO: SORT BY DEGREE
         var intraClusterNodes = [];

@@ -7,10 +7,11 @@ client = MongoClient('localhost', 27017)
 # clusters_coll = db['clusters']
 # paper_md_coll = db['paper_metadata']
 db = client['danish_project']
-articles_coll = db['articles']
 named_entities_coll = db['named_entities_1991']
 regions_coll = db['regions_1991']
-
+# db = client['study_plan']
+# elements_coll = db['elements']
+# regions_coll = db['regions']
 
 def landmark_regions(clusters):
     # =========================
@@ -97,7 +98,7 @@ def intracluster_summary(nodes):
         #     elements_cursor = elements_coll.find({'_id': elem_id})
         #     for elem in elements_cursor:
         #         elements.append(elem['content'])
-        # response[landmark_id] = ' | '.join([str(e) for e in elements])
+        # response[region_id] = ' | '.join([str(e) for e in elements])
         # =========================
     # =========================
 

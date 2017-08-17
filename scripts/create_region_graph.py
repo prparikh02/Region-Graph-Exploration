@@ -170,11 +170,11 @@ def next_highest_depth(regions, set_region_composition):
             enumerate(set_region_composition.iteritems()):
         depths = [len(regions[r]['sets']) for r in composing_regions]
         depths = sorted(list(set(depths)))
-        # TODO: if all regions have single depth
         depth_map = dict(zip(depths[:-1], depths[1:]))
         max_depth = max(depths)
         if len(depths) == 1:
-            print depths
+            # TODO: if all regions have single depth
+            pass
         for r_i in composing_regions:
             generating_sets_i = regions[r_i]['sets']
             depth_i = len(generating_sets_i)
@@ -228,9 +228,8 @@ def read_sets(filename):
             if not line.strip():
                 continue
             split_line = line.strip().split(DELIMITER)
-            print split_line
             if len(split_line) == 1:
-                set_id = idx
+                set_id = str(idx)
                 elems = split_line[0].split()
             elif len(split_line) == 2:
                 set_id = split_line[0]
@@ -273,7 +272,7 @@ def find_regions(elem_assoc):
 
     regions = {}
     for idx, (k, v) in enumerate(inv_idx.iteritems()):
-        regions[idx] = {
+        regions[str(idx)] = {
             'sets': k,
             'elems': v
         }
@@ -365,7 +364,6 @@ if __name__ == '__main__':
     set_region_composition = get_set_region_composition(regions)
     adjacency = create_region_adjacency(regions, set_region_composition)
     G = create_graph(adjacency)
-    print G
 
     write_graph(G, output_prefix)
     write_adjacency(G, output_prefix)

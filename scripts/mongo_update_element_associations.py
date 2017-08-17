@@ -7,7 +7,7 @@ from pymongo import MongoClient
 
 
 def init_argparser():
-    description = ('Update element associations in MongoDB')
+    description = 'Update element associations in MongoDB'
     parser = ArgumentParser(description=description,
                             formatter_class=RawTextHelpFormatter)
 
@@ -15,7 +15,8 @@ def init_argparser():
                         type=str, help='path to pickled regions file')
 
     parser.add_argument('database_name', metavar='db', type=str,
-                        help='name of existing or new Mongo database')
+                        help=('name of existing Mongo database with '
+                              'collection named \'elements\''))
 
     return parser
 

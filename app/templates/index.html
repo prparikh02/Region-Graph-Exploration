@@ -513,7 +513,7 @@
             },
             success: function(response) {
                 var updateArray = [];
-                for (edgeID in allEdges) {
+                for (var edgeID in allEdges) {
                     if (allEdges.hasOwnProperty(edgeID)) {
                         var edge = allEdges[edgeID];
                         if (response.hasOwnProperty(edgeID)) {
@@ -529,7 +529,7 @@
                 edgesDataset.update(updateArray);
 
                 updateArray = [];
-                for (nodeID in allNodes) {
+                for (var nodeID in allNodes) {
                     var node = allNodes[nodeID];
                     if (nodeID == rootNodeID) {
                         node['color'] = undefined;
@@ -550,7 +550,7 @@
         e.preventDefault();
         var updateArray = [];
         var displayEdges = !edgesShown;
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             edge['hidden'] = displayEdges;
             updateArray.push(edge);
@@ -562,7 +562,7 @@
     $('#toggleArrowsBtn').click(function(e) {
         e.preventDefault();
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             if (edge.hasOwnProperty('arrows')) {
                 delete edge['arrows'];
@@ -577,7 +577,7 @@
     $('#resetEdgeColorsBtn').click(function(e) {
         e.preventDefault();
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             edge['hidden'] = false;
             edge['color'] = {'inherit': 'from', 'opacity': 1.0};
@@ -591,7 +591,7 @@
         e.preventDefault();
         var spineLength = 0;
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             if (!edge.hasOwnProperty('category')) {
                 alert('Edges are not annotated with spine categories.');
@@ -620,7 +620,7 @@
         e.preventDefault();
         var spineLength = 0;
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             if (!edge.hasOwnProperty('category')) {
                 alert('Edges are not annotated with spine categories.');
@@ -645,7 +645,7 @@
         e.preventDefault();
         var spineLength = 0;
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             if (!edge.hasOwnProperty('category')) {
                 alert('Edges are not annotated with spine categories.');
@@ -675,14 +675,14 @@
         e.preventDefault();
         var spineLength = 0;
         var landmarkNodes = {};
-        for (nodeID in allNodes) {
+        for (var nodeID in allNodes) {
             var node = allNodes[nodeID];
             if (node['shape'] === 'star') {
                 landmarkNodes[node['id']] = 1;
             }
         }
         var updateArray = [];
-        for (edgeID in allEdges) {
+        for (var edgeID in allEdges) {
             var edge = allEdges[edgeID];
             if (!edge.hasOwnProperty('category')) {
                 alert('Edges are not annotated with spine categories.');
@@ -743,7 +743,7 @@
 
         var updateArray = [];
         var selectedNode = null;
-        for (nodeID in allNodes) {
+        for (var nodeID in allNodes) {
             var node = allNodes[nodeID];
             if (node['label'] == vertex_label) {
                 node['color'] = undefined;
@@ -1068,7 +1068,7 @@
 
         // TODO: SORT BY DEGREE
         var intraClusterNodes = [];
-        for (nodeID in allNodes) {
+        for (var nodeID in allNodes) {
             var node = allNodes[nodeID];
             if (node['group'] == groupID) {
                 intraClusterNodes.push({
@@ -1090,7 +1090,7 @@
                     console.log(response['summary']);
                 }
                 var rows = [];
-                for (icNode in intraClusterNodes) {
+                for (var icNode in intraClusterNodes) {
                     var node = intraClusterNodes[icNode];
                     rows.push('<tr style="background-color: ' + rgbColorString + '" data-value="' + node['id'] + '">' +
                                 '<td>' + node['label'] + '</td>' +
@@ -1304,7 +1304,7 @@
 
     function degreeDistribution() {
         var degrees = [];
-        for (nodeID in allNodes) {
+        for (var nodeID in allNodes) {
             degrees.push(network.getConnectedNodes(nodeID).length);
         }
         degrees.sort(function(a, b) {
@@ -1419,7 +1419,7 @@
     function getLandmarkClusters() {
         var networkGroups = network['groups']['groups'];
         var clusters = {};
-        for (nodeID in allNodes) {
+        for (var nodeID in allNodes) {
             var node = allNodes[nodeID];
             var group = node['group'];
             if (!clusters.hasOwnProperty(group)) {
@@ -1447,7 +1447,7 @@
             },
             success: function(response) {
                 var rows = [];
-                for (groupID in clusters) {
+                for (var groupID in clusters) {
                     var landmarkLabel = clusters[groupID]['landmark']['label'];
                     var landmarkID = clusters[groupID]['landmark']['id'];
                     var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);

@@ -41,8 +41,14 @@ class PartitionTree(object):
         Q.put(root)
         while Q.qsize() > 0:
             node = Q.get()
-            # TODO: Newly created trees will have the cross_edge attribute
+            # TODO (deprecate):
+            #   In newly created trees, nodes will always have the cross_edge
+            #   attribute, even if it empty, []. Then, the getattr() call can
+            #   be replaced with direct call as such: node.cross_edges
             cross_edges = getattr(node, 'cross_edges', [])
+            if cross_edges:
+                cross_edges = \
+                    [e for edges in cross_edges.values() for e in edges]
             elist.update(cross_edges)
             if node.is_leaf():
                 vlist.update(node.vertex_indices)

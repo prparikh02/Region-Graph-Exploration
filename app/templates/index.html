@@ -113,7 +113,7 @@
     }
 
     #landmarksTableContainer {
-        width: 450px;
+        width: 375px;
         height: 350px;
         margin: 5px;
         border: 1px solid lightgray;
@@ -122,7 +122,16 @@
     }
 
     #clustersTableContainer {
-        width: 450px;
+        width: 375px;
+        height: 350px;
+        margin: 5px;
+        border: 1px solid lightgray;
+        float: left;
+        overflow: auto;
+    }
+
+    #sinksTableContainer {
+        width: 375px;
         height: 350px;
         margin: 5px;
         border: 1px solid lightgray;
@@ -354,8 +363,26 @@
                 </tbody>
             </table>
         </div>
+         <div id="sinksTableContainer">
+            <table id="sinksTable" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th>Sink Label</th>
+                        <th>Descr.</th>
+                        <th>Depth</th>
+                        <th>In-Degree</th>
+                    </tr>
+                </thead>
+                <tbody id="sinksTableContentArea" class="clusterize-content">
+                    <tr class="clusterize-no-data">
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div> 
         <div style="clear: both;">
             <button id="getIntraClusterDescriptionsBtn" type="button">Get Intra-cluster Descriptions</button>
+            <button id="getSinkDescriptionsBtn" type="button">Get Sink Descriptions</button>
         </div>
     </div>
 
@@ -561,17 +588,7 @@
 
     $('#toggleArrowsBtn').click(function(e) {
         e.preventDefault();
-        var updateArray = [];
-        for (var edgeID in allEdges) {
-            var edge = allEdges[edgeID];
-            if (edge.hasOwnProperty('arrows')) {
-                delete edge['arrows'];
-            } else {
-                edge['arrows'] = 'to';
-            }
-            updateArray.push(edge);
-        }
-        edgesDataset.update(updateArray);
+        toggleArrows();
     });
 
     $('#resetEdgeColorsBtn').click(function(e) {
@@ -758,6 +775,32 @@
         fetch_node_info(selectedNode['id']);
     });
 
+    $('body').on('click', '#sinksTable tr', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+        } else {
+            $(this).addClass('selected').siblings().removeClass('selected');
+        }
+        var vertex_label = $(this).children('td').eq(0).text();
+
+        var updateArray = [];
+        var selectedNode = null;
+        for (var nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            if (node['label'] == vertex_label) {
+                node['color'] = undefined;
+                selectedNode = node;
+            } else {
+                node['color'] = 'rgba(200,200,200,0.5)';
+            }
+            updateArray.push(node);
+        }
+        nodesDataset.update(updateArray);
+        highlightActive = true;
+        fetch_node_info(selectedNode['id']);
+    });
+
     $('#getNodeChildrenBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var fullyQualifiedLabel = node.attr('data-value');
@@ -827,6 +870,7 @@
         }
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
+        $('#sinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#induceNodeSubgraphBtn :button').prop('disabled', true);
@@ -864,6 +908,7 @@
         }
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
+        $('#sinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#landmarksBtn :button').prop('disabled', true);
@@ -1060,11 +1105,12 @@
     $('#getIntraClusterDescriptionsBtn').click(function(e) {
         var groupID = parseInt($('#landmarksTable tr.selected td:nth-child(1)').text());
         var networkGroups = network['groups']['groups'];
-        var rgbColor = hexToRgb(networkGroups[groupID]['color']['background']);
-        var rgbColorString = "rgba(" + rgbColor['r'] + ", " + 
-                                       rgbColor['g'] + ", " + 
-                                       rgbColor['b'] + ", " +
-                                       0.50 + ");";
+        var rgbMap = hexToRgb(networkGroups[groupID]['color']['background']);
+        var rgbColorString = toRgbColorString(rgbMap);
+        // var rgbColorString = "rgba(" + rgbColor['r'] + ", " + 
+        //                                rgbColor['g'] + ", " + 
+        //                                rgbColor['b'] + ", " +
+        //                                0.50 + ");";
 
         // TODO: SORT BY DEGREE
         var intraClusterNodes = [];
@@ -1102,6 +1148,62 @@
                     scrollId: 'clustersTableContainer',
                     contentId: 'clustersTableContentArea'
                 });
+            },
+            complete: function() { }
+        });
+    });
+
+    $('#getSinkDescriptionsBtn').click(function(e) {
+        var sinks = [];
+        nodesLoop:
+        for (var nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            var incidentEdges = network.getConnectedEdges(nodeID);
+            for (var edgeNum in incidentEdges) {
+                if (edgesDataset.get(incidentEdges[edgeNum])['from'] == nodeID) {
+                    continue nodesLoop;
+                }
+            }
+            sinks.push({
+                'id': node['id'],
+                'label': node['label'],
+                'group': node['group'],
+                'inDegree': incidentEdges.length,
+            });
+        }
+
+        $.ajax({
+            type: 'GET',
+            url: '/get-sink-info',
+            data: {
+                nodes: JSON.stringify(sinks)
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var networkGroups = network['groups']['groups'];
+                var rows = [];
+                for (var sinkNum in sinks) {
+                    var sink = sinks[sinkNum];
+                    var rgbMap = hexToRgb(networkGroups[sink['group']]['color']['background']);
+                    var rgbColorString = toRgbColorString(rgbMap);
+                    var resp = response[sink['label']];
+                    rows.push('<tr style="background-color: ' + rgbColorString + '" data-value="' + sink['id'] + '">' +
+                                '<td>' + sink['label'] + '</td>' +
+                                '<td>' + resp['elements'] + '</td>' +
+                                '<td>' + resp['depth'] + '</td>' +
+                                '<td>' + sink['inDegree'] + '</td>' +
+                                '</tr>');
+                }
+                var clusterize = new Clusterize({
+                    rows: rows,
+                    scrollId: 'sinksTableContainer',
+                    contentId: 'sinksTableContentArea'
+                });
+
+                toggleArrows();
             },
             complete: function() { }
         });
@@ -1473,8 +1575,6 @@
     }
 
     function appendLandmarkClusters(fullyQualifiedLabel, cluster_assignment, node) {
-        console.log(fullyQualifiedLabel);
-        console.log(cluster_assignment);
         $.ajax({
             type: 'POST',
             url: '/append-landmark-clusters',
@@ -1494,6 +1594,20 @@
         });
     }
 
+    function toggleArrows() {
+        var updateArray = [];
+        for (var edgeID in allEdges) {
+            var edge = allEdges[edgeID];
+            if (edge.hasOwnProperty('arrows')) {
+                delete edge['arrows'];
+            } else {
+                edge['arrows'] = 'to';
+            }
+            updateArray.push(edge);
+        }
+        edgesDataset.update(updateArray);
+    }
+
     /*
     source: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
     */
@@ -1510,6 +1624,14 @@
             g: parseInt(result[2], 16),
             b: parseInt(result[3], 16)
         } : null;
+    }
+
+    function toRgbColorString(rgbMap, opacity=0.50) {
+        var rgbColorString = "rgba(" + rgbMap['r'] + ", " + 
+                                       rgbMap['g'] + ", " + 
+                                       rgbMap['b'] + ", " +
+                                       opacity + ");";
+        return rgbColorString;
     }
 </script>
 

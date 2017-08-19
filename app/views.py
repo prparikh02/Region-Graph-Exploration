@@ -191,6 +191,13 @@ def get_intracluster_summary():
     return jsonify(response)
 
 
+@app.route('/get-sink-info')
+def get_sink_info():
+    nodes = json.loads(request.args.get('nodes'))
+    response = sink_info(nodes)
+    return jsonify(response)
+
+
 @app.route('/doc-lookup')
 def do_doc_lookup():
     node_id = int(request.args.get('node_id'))

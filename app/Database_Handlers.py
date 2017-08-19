@@ -35,7 +35,7 @@ def landmark_regions(clusters):
         # =========================
 
         # =========================
-        # TODO: Genericize database to handle this...
+        # TODO: GENERIC
         #       This should be the eventual generic code for all region graphs
         # elements = []
         # for elem_id in region['elements']:
@@ -74,6 +74,7 @@ def intracluster_summary(nodes):
     # NOTE: REGION GRAPHS
     response = {}
     for node in nodes:
+        # FIXME: should this really be node['id'] ?
         region_id = node['label']
         region_cursor = regions_coll.find({'_id': int(region_id)})
         # TODO: Should be an assertion that region_cursor is of length 1
@@ -91,7 +92,7 @@ def intracluster_summary(nodes):
         # =========================
 
         # =========================
-        # TODO: Genericize database to handle this...
+        # TODO: GENERIC
         #       This should be the eventual generic code for all region graphs
         # elements = []
         # for elem_id in region['elements']:
@@ -155,7 +156,7 @@ def doc_lookup(node_id):
     # =========================
 
     # =========================
-    # TODO: Genericize database to handle this...
+    # TODO: GENERIC
     #       This should be the eventual generic code for all region graphs
     # response = {'region_id': region['_id']}
     # response['elements'] = []
@@ -187,6 +188,54 @@ def doc_lookup(node_id):
     # for doc in cursor[0:1]:
     #     doc.pop('_id', None)
     #     response[doc['doi']] = doc
+    # =========================
+
+    return response
+
+
+def sink_info(nodes):
+    # =========================
+    # NOTE: REGION GRAPHS
+    response = {}
+    for node in nodes:
+        # FIXME: should this really be node['id'] ?
+        region_id = node['label']
+        region_cursor = regions_coll.find({'_id': int(region_id)})
+        # TODO: Should be an assertion that region_cursor is of length 1
+        region = region_cursor[0]
+
+        # =========================
+        # BEGIN SPECIFIC CODE --> Named Entity Graph
+        named_entities = []
+        for ne_id in region['named_entities']:
+            named_entities_cursor = \
+                named_entities_coll.find({'_id': int(ne_id)})
+            for named_entity in named_entities_cursor:
+                named_entities.append(named_entity['named_entity'])
+        response[region_id] = {}
+        response[region_id]['elements'] = ' | '.join(named_entities)
+        # the depth is taken to be the last named_entity's number of articles
+        response[region_id]['depth'] = len(named_entity['articles'])
+        # =========================
+
+        # =========================
+        # TODO: GENERIC
+        #       This should be the eventual generic code for all region graphs
+        # elements = []
+        # for elem_id in region['elements']:
+        #     elements_cursor = elements_coll.find({'_id': elem_id})
+        #     for elem in elements_cursor:
+        #         elements.append(elem['content'])
+        # response[region_id] = {}
+        # response[region_id]['elements'] = \
+        #   ' | '.join([str(e) for e in elements])
+        # response[region_id]['depth'] = int(region['depth'])
+        # =========================
+    # =========================
+    
+    # =========================
+    # NOTE: CITESEERX
+    # TODO: Implementation needed
     # =========================
 
     return response

@@ -174,21 +174,14 @@ function fetch_node_info(node_id) {
             'node_id': node_label
         },
         success: function (data) {
-            console.log(data);
             if (data.hasOwnProperty('error_message')) {
                 $('#nodeInfo').html(data['error_message']);
                 return;
             }
             renderjson.set_icons('++', '--');
-            renderjson.set_show_to_level(2);
+            renderjson.set_show_to_level(3);
             $('#nodeInfo').empty();
-            // TODO: change so that it looks more like one object 
-            for (var key in data) {
-                if (!data.hasOwnProperty(key)) {
-                    continue;
-                }
-                $('#nodeInfo').append(renderjson(data[key]));
-            }
+            $('#nodeInfo').append(renderjson(data));
             $('#nodeInfo').append('Degree: ' + network.getConnectedNodes(node_id).length);
         }
     });

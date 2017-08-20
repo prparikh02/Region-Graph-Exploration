@@ -1,6 +1,6 @@
 *.pyc
-app/data/graphs/*
-app/data/trees/*
+app/data/graphs/*.gt
+app/data/trees/*.pkl
 app/adjacency_out/*
 .ipynb_checkpoints/
 *.ipynb

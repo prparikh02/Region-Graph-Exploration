@@ -1,4 +1,4 @@
-import gensim.summarization
+# import gensim.summarization
 import json
 from pymongo import MongoClient
 
@@ -123,12 +123,12 @@ def intracluster_summary(nodes):
 
     response = {'nodes': response}
 
-    try:
-        text_list = [response['nodes'][label] for label in response['nodes']]
-        summary = gensim.summarization.summarize('. '.join(text_list))
-        response['summary'] = summary
-    except TypeError, ValueError:
-        print('could not produce summary...')
+    # try:
+    #     text_list = [response['nodes'][label] for label in response['nodes']]
+    #     summary = gensim.summarization.summarize('. '.join(text_list))
+    #     response['summary'] = summary
+    # except TypeError, ValueError:
+    #     print('could not produce summary...')
 
     return response
 

@@ -364,8 +364,8 @@ def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
     return children, cross_edges
 
 
-# # TODO: Implement
-# def k_connected_components(G, vertex_indices=None, edge_indices=None):
+def k_connected_components(G, vertex_indices=None, edge_indices=None):
+    # TODO: Implement
 #     '''
 #     Partition Type: TBD (kind of vertex and edge, but not really a partition)
 
@@ -416,3 +416,4 @@ def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
 #     N = len(k_components[largest_k])
 #     for s in k_components[largest_k]:
 #         pass
+    return

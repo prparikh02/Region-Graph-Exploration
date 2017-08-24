@@ -54,9 +54,10 @@ def init_argparser():
 
     parser.add_argument('-m', '--max-depth-diff', type=int, metavar='',
                         dest='max_depth_diff', default=1,
-                        help='the maximum depth difference between two '
+                        help='The maximum depth difference between two '
                              'regions for them to be eligible to be '
-                             'neighbors')
+                             'neighbors. Ignored when --regions-connection '
+                             'is set to next-highest-depth.')
 
     return parser
 

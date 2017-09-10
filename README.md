@@ -21,6 +21,12 @@ sudo pip install requirements.txt
 
 Using a virtualenv is highly recommended.
 
+## Quick Links
+
+[Getting Started Wiki (Home)](https://github.com/prparikh02/Region-Graph-Exploration/wiki/Getting-Started)  
+[Development Wiki](https://github.com/prparikh02/Region-Graph-Exploration/wiki/Development)  
+[Usage Wiki](https://github.com/prparikh02/Region-Graph-Exploration/wiki/UI-Usage)
+
 ## Background
 
 ### Algorithms

@@ -269,6 +269,7 @@ def to_vis_json_cluster_map(G,
 
     return {'nodes': nodes, 'edges': edges}
 
+
 def to_vis_json_metagraph(metanodes, cross_edges):
     nodes = []
     for mn_id, node_info in metanodes.iteritems():

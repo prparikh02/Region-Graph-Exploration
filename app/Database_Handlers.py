@@ -1,19 +1,52 @@
-# import gensim.summarization
 import json
 from pymongo import MongoClient
+"""Database Handlers
 
+This module provides functions that handle all interaction with MongoDB.
+
+There are currently several blocks of code that do the same thing, but with
+legacy database schema.
+
+TODO:
+    * Migrate all databases with legacy schema to the current, generic format.
+    * Abstract the logic of these functions to remove redundant functions.
+"""
+
+# These globals define the database and collections to be accessed
 client = MongoClient('localhost', 27017)
+
+"""Legacy CiteseerX format
+TODO: Deprecate
+"""
 # db = client['citeseerx']
 # clusters_coll = db['clusters']
 # paper_md_coll = db['paper_metadata']
+
+"""Legacy Named Entity format
+TODO: Deprecate
+"""
 db = client['danish_project']
 named_entities_coll = db['named_entities_1991']
 regions_coll = db['regions_1991']
+
+"""Current, generic format"""
 # db = client['study_plan']
 # elements_coll = db['elements']
 # regions_coll = db['regions']
 
+
 def landmark_regions(clusters):
+    """Gets landmark regions and each of their intra-cluster regions.
+
+    Args:
+        clusters (dict): An object whose key is a cluster id and whose value is
+                         another object containing a list of regions in that
+                         cluster, and the landmark of the cluster.
+
+    Returns:
+        A dict with landmark_id as key and a list of elements associated with
+        that landmark region as the value.
+    """
     # =========================
     # NOTE: REGION GRAPHS
     response = {}
@@ -35,7 +68,7 @@ def landmark_regions(clusters):
         # =========================
 
         # =========================
-        # TODO: GENERIC
+        # NOTE: GENERIC
         #       This should be the eventual generic code for all region graphs
         # elements = []
         # for elem_id in region['elements']:
@@ -70,6 +103,18 @@ def landmark_regions(clusters):
 
 
 def intracluster_summary(nodes):
+    """Gets a list of regions associated with a landmark region, inclusive.
+
+    Args:
+        nodes (list): A list of region_id's.
+
+    Returns:
+        A dict with region_id as key and a list of elements associated with
+        that landmark region as the value.
+        TODO: For legacy purposes, the return response is wrapped in another
+              dict as the value to a key named 'nodes'. Action item is to
+              remove the need for this legacy compatibility.
+    """
     # =========================
     # NOTE: REGION GRAPHS
     response = {}
@@ -134,6 +179,14 @@ def intracluster_summary(nodes):
 
 
 def doc_lookup(node_id):
+    """Queries MongoDB for a region object
+
+    Args:
+        node_id (str): A region_id.
+
+    Returns:
+        The single region object retrieved from the database query.
+    """
     if not node_id:
         return {'msg': 'invalid cluster_id'}
 
@@ -194,6 +247,15 @@ def doc_lookup(node_id):
 
 
 def sink_info(nodes):
+    """Gets info for a given set of regions taken as granted to be sinks.
+
+    Args:
+        nodes (list): A list of region_id's.
+
+    Returns:
+        A dict with region_id as key and a list of elements associated with
+        that landmark region as the value.
+    """
     # =========================
     # NOTE: REGION GRAPHS
     response = {}
@@ -232,7 +294,7 @@ def sink_info(nodes):
         # response[region_id]['depth'] = int(region['depth'])
         # =========================
     # =========================
-    
+
     # =========================
     # NOTE: CITESEERX
     # TODO: Implementation needed

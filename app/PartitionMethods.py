@@ -365,55 +365,58 @@ def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
 
 
 def k_connected_components(G, vertex_indices=None, edge_indices=None):
-    # TODO: Implement
-#     '''
-#     Partition Type: TBD (kind of vertex and edge, but not really a partition)
+    """
+    TODO: Implement
 
-#     Description: Given graph G and sets of both vertex and edge indices,
-#         induce subgraph and maximally break (NOT PARTITION) into k-connected
-#         components.
-#     '''
+    Partition Type: TBD (kind of vertex and edge, but not really a partition)
 
-#     if not isinstance(G, gt.Graph):
-#         err_msg = 'G must be a graph_tool.Graph instance'
-#         raise ValueError(err_msg)
+    Description: Given graph G and sets of both vertex and edge indices,
+        induce subgraph and maximally break (NOT PARTITION) into k-connected
+        components.
+    """
 
-#     if vertex_indices is None and edge_indices is None:
-#         err_msg = 'Must provide either vertex indices or edge indices'
-#         raise ValueError(err_msg)
+    '''
+    if not isinstance(G, gt.Graph):
+        err_msg = 'G must be a graph_tool.Graph instance'
+        raise ValueError(err_msg)
 
-#     vp = G.new_vp('bool', vals=False)
-#     ep = G.new_ep('bool', vals=False)
-#     try:
-#         vp.a[vertex_indices] = True
-#         ep.a[edge_indices] = True
-#     except:
-#         err_msg = 'vertex or edge indices not in G'
-#         raise IndexError(err_msg)
-#     G.set_vertex_filter(vp)
-#     G.set_edge_filter(ep)
+    if vertex_indices is None and edge_indices is None:
+        err_msg = 'Must provide either vertex indices or edge indices'
+        raise ValueError(err_msg)
 
-#     H = nx.Graph()
-#     for e in G.edges():
-#         src_idx = G.vertex_index[e.source()]
-#         tar_idx = G.vertex_index[e.target()]
-#         H.add_edge(src_idx, tar_idx)
+    vp = G.new_vp('bool', vals=False)
+    ep = G.new_ep('bool', vals=False)
+    try:
+        vp.a[vertex_indices] = True
+        ep.a[edge_indices] = True
+    except:
+        err_msg = 'vertex or edge indices not in G'
+        raise IndexError(err_msg)
+    G.set_vertex_filter(vp)
+    G.set_edge_filter(ep)
 
-#     if G.num_edges() > G.num_vertices() * np.log2(G.num_vertices()):
-#         flow_func = shortest_augmenting_path
-#     else:
-#         flow_func = edmonds_karp
-#     k_components = nx.k_components(H, flow_func=flow_func)
-#     for k, vertex_sets in k_components.iteritems():
-#         print('k = {} | No. of Components: {}'.format(k, len(vertex_sets)))
-#         for vs in vertex_sets:
-#             print('    {}'.format(vs))
-#         print('')
+    H = nx.Graph()
+    for e in G.edges():
+        src_idx = G.vertex_index[e.source()]
+        tar_idx = G.vertex_index[e.target()]
+        H.add_edge(src_idx, tar_idx)
 
-#     # make meta graph
-#     largest_k = max(k_components.keys())
+    if G.num_edges() > G.num_vertices() * np.log2(G.num_vertices()):
+        flow_func = shortest_augmenting_path
+    else:
+        flow_func = edmonds_karp
+    k_components = nx.k_components(H, flow_func=flow_func)
+    for k, vertex_sets in k_components.iteritems():
+        print('k = {} | No. of Components: {}'.format(k, len(vertex_sets)))
+        for vs in vertex_sets:
+            print('    {}'.format(vs))
+        print('')
 
-#     N = len(k_components[largest_k])
-#     for s in k_components[largest_k]:
-#         pass
+    # make meta graph
+    largest_k = max(k_components.keys())
+
+    N = len(k_components[largest_k])
+    for s in k_components[largest_k]:
+        pass
+    '''
     return

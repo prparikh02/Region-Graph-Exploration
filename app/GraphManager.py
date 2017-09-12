@@ -2,6 +2,10 @@ import graph_tool.all as gt
 
 
 class GraphManager(object):
+    """Utility class for loading a graph-tool graph.
+
+    Loads a graph from either a '.gt' file or from an edge list plaintext file.
+    """
 
     def __init__(self, edges_file):
         self.edges_file = edges_file

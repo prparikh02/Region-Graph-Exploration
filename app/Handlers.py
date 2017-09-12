@@ -6,7 +6,15 @@ from Queue import Queue
 from Helpers import *
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
 from PartitionMethods import *
+"""Handlers
 
+This module provides [non-database-related] functions that in some way
+manipulate or filter the graph, or perform hierarchy tree operations.
+
+All functions implemented here must return a dict object.
+"""
+
+# Available hierarchy tree operations for graph decomposition
 OPERATIONS = {
     'connected_components': connected_components,
     'biconnected_components': biconnected_components,
@@ -14,10 +22,23 @@ OPERATIONS = {
     'peel_one': peel_one,
     'k_connected_components': k_connected_components
 }
+
+# Helper lambdas and functions
 float_formatter = lambda x: '{:.2f}'.format(x)
 
 
 def get_node_children(T, fully_qualified_label):
+    """Get a PartitionNode's children.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+
+    Returns:
+        A list (as a dict) of information dicts about children nodes for the
+        given PartitionNode.
+    """
+
     node = traverse_tree(T, fully_qualified_label)
     node_info = []
     for child in node.children:
@@ -37,31 +58,39 @@ def get_node_children(T, fully_qualified_label):
 
 
 def remove_node_children(T, fully_qualified_label):
+    """Remove a PartitionNode's children.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+
+    Returns:
+        Pointer back to the original input PartitionNode.
+    """
+
     node = traverse_tree(T, fully_qualified_label)
     node.remove_children()
     return {'node': node}
 
 
-def induce_subgraph(G, vlist, elist):
-    if not G:
-        return 'No graph loaded'
-
-    # get proper indices
-    vp = G.new_vp('bool', vals=False)
-    ep = G.new_ep('bool', vals=False)
-    if vlist is []:
-        vlist = np.ones_like(vp.a)
-    if elist is []:
-        elist = np.ones_like(ep.a)
-    vp.a[vlist] = True
-    ep.a[elist] = True
-    G.set_vertex_filter(vp)
-    G.set_edge_filter(ep)
-
-    return {'vis_data': to_vis_json(G)}
-
-
 def decompose_node(T, G, fully_qualified_label, operation):
+    """Decompose a PartitionNode using a specified partitioning operation.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        G (graph_tool.Graph): The graph instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+        operation (str): The decomposing operation.
+
+    Returns:
+        A list of information dicts about the newly-created
+        children nodes for the given PartitionNode.
+
+        or
+
+        Error message.
+    """
+
     if operation not in OPERATIONS:
         return {'msg': 'Invalid operation'}
 
@@ -108,7 +137,55 @@ def decompose_node(T, G, fully_qualified_label, operation):
     return {'node_info': node_info}
 
 
+def induce_subgraph(G, vlist, elist):
+    """Induce a subgraph given vertex and edge lists.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+
+    Returns:
+        Vis.js formatted network data.
+    """
+
+    if not G:
+        return 'No graph loaded'
+
+    # get proper indices
+    vp = G.new_vp('bool', vals=False)
+    ep = G.new_ep('bool', vals=False)
+    if vlist is []:
+        vlist = np.ones_like(vp.a)
+    if elist is []:
+        elist = np.ones_like(ep.a)
+    vp.a[vlist] = True
+    ep.a[elist] = True
+    G.set_vertex_filter(vp)
+    G.set_edge_filter(ep)
+
+    return {'vis_data': to_vis_json(G)}
+
+
 def landmark_clustering(G, vlist, elist, cmd):
+    """Clusters the subgraph induced by the input vlist and elist using
+    landmark clustering, which is implemented in as a callable binary.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created
+        children nodes for the given PartitionNode.
+
+        or
+
+        A dict containing information regarding the clustering, including
+        Vis.js formatted network data.
+    """
+
     vfilt = G.new_vp('bool', vals=False)
     vfilt.a[vlist] = True
     G.set_vertex_filter(vfilt)
@@ -183,14 +260,31 @@ def landmark_clustering(G, vlist, elist, cmd):
 
 def make_landmark_cluster_children(G, T, fully_qualified_label,
                                    cluster_assignment):
+    """Partition a PartitionNode by landmark clustering.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+        cluster_assignment (dict): Mapping of vertices to their clusters.
+
+    Returns:
+        A list of information dicts about the newly-created
+        children nodes for the given PartitionNode.
+
+        or
+
+        Error message.
+    """
+
     node = traverse_tree(T, fully_qualified_label)
     if not node.is_leaf():
         msg = 'Node is not leaf. Cluster children will not be appended'
         return {'msg': msg}
 
     vlist, elist = get_indices(T, fully_qualified_label)
-    operation = landmark_cluster_partition
-    children, cross_edges = operation(G, vlist, elist, cluster_assignment)
+    children, cross_edges = \
+        landmark_cluster_partition(G, vlist, elist, cluster_assignment)
 
     if not children:
         msg = 'Could not decompose any further using method: {}'
@@ -228,6 +322,22 @@ def make_landmark_cluster_children(G, T, fully_qualified_label,
 
 
 def metagraph(T, fully_qualified_label):
+    """Get Metagraph view of PartitionNode's children.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+
+    Returns:
+        A list of information dicts about the metagraph nodes
+        derived from the relationships between children nodes of the given
+        PartitionNode.
+
+        or
+
+        Error message.
+    """
+
     node = traverse_tree(T, fully_qualified_label)
     if node.is_leaf():
         msg = 'Node is a leaf. No metagraph can be produced.'
@@ -258,6 +368,19 @@ def metagraph(T, fully_qualified_label):
 
 
 def bcc_tree(G, vlist, elist):
+    """Get biconnected component tree view of a subgraph defined by the input
+    vertex and edge lists.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+
+    Returns:
+        An object containing information regarding the BCC tree created,
+        including Vis.js formatted network data.
+    """
+
     # get proper indices
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
@@ -334,6 +457,18 @@ def bcc_tree(G, vlist, elist):
 
 
 def bfs_tree(G, vlist, elist, root_idx):
+    """Get a spanning tree created by starting a BFS at a root vertex.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+        root_idx (int): Vertex index of root of BFS search.
+
+    Returns:
+        An object containing edges used in BFS spanning tree.
+    """
+
     # set filters
     vfilt = G.new_vp('bool', vals=False)
     vfilt.a[vlist] = True

@@ -4,9 +4,22 @@ import numpy as np
 from collections import Counter
 from subprocess import Popen, PIPE
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
+"""Helpers
+
+This module provides helper functions.
+"""
 
 
 def statistics(G):
+    """Provides general graph statistics.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+
+    Returns:
+        An object with describing many statistical properties of the graph.
+    """
+
     if not G:
         return 'No Graph Loaded'
     float_formatter = lambda x: '{:.2f}'.format(x)
@@ -63,11 +76,18 @@ def statistics(G):
 
 
 def kcore_decomposition(G, vlist=[], elist=[]):
-    '''
-    Synonymous with graph vertex peeling.
-    Returns dict with keys as kcore values and
-        values as vertex IDs.
-    '''
+    """Peform kcore decomposition (aka graph vertex peeling) on subgraph of G
+    induced by input vertex and edge indices.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+
+    Returns:
+        Dict with keys as kcore values and values as vertex IDs.
+    """
+
     # initiate filters, if necessary
     if vlist or elist:
         vp = G.new_vp('bool', vals=False)
@@ -104,6 +124,16 @@ def kcore_decomposition(G, vlist=[], elist=[]):
 
 
 def traverse_tree(T, fully_qualified_label):
+    """Traverse hierarchy to find PartitionNode with given label.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+
+    Returns:
+        PartitionNode with given label.
+    """
+
     if fully_qualified_label.lower() == 'root':
         return T.root
     sub_ids = fully_qualified_label.split('|')
@@ -117,6 +147,17 @@ def traverse_tree(T, fully_qualified_label):
 
 
 def get_indices(T, fully_qualified_label):
+    """Traverse hierarchy to find PartitionNode with given label and return its
+    vertex and edge indices.
+
+    Args:
+        T (PartitionTree): The hierarchy tree instance.
+        fully_qualified_label (str): Full name of the PartitionNode.
+
+    Returns:
+        vlist, elist: vertex and edge lists, respectively.
+    """
+
     node = traverse_tree(T, fully_qualified_label)
     if len(node.vertex_indices) != 0:
         vlist = node.vertex_indices
@@ -127,6 +168,19 @@ def get_indices(T, fully_qualified_label):
 
 
 def save_adjacency(G, vlist, elist, filename):
+    """Induce subgraph of G using input vertex and edge lists and save the
+    resulting adjacency list to a file.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vlist (list): List of vertex indices to induce upon.
+        elist (list): List of edge indices to induce upon.
+        filename (str): Filepath to write adjacency.
+
+    Returns:
+        Confirmation or error message.
+    """
+
     # get proper indices
     vp = G.new_vp('bool', vals=False)
     ep = G.new_ep('bool', vals=False)
@@ -149,6 +203,15 @@ def save_adjacency(G, vlist, elist, filename):
 
 
 def to_vis_json(G, filename=None):
+    """Produce Vis.js formatted network data (general).
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+
+    Returns:
+        Vis.js formatted network data.
+    """
+
     nodes = []
     for v in G.vertices():
         # v_id = G.vp['id'][v]
@@ -183,6 +246,15 @@ def to_vis_json(G, filename=None):
 
 
 def to_vis_json_bcc_tree(G, filename=None):
+    """Produce Vis.js formatted network data (for BCC trees).
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+
+    Returns:
+        Vis.js formatted network data.
+    """
+
     AP_GROUP = 0
     BCC_METANODE_GROUP = 1
     nodes = []
@@ -226,6 +298,19 @@ def to_vis_json_cluster_map(G,
                             landmark_map,
                             spine,
                             branches):
+    """Produce Vis.js formatted network data (for clusters).
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        cluster_assignment (dict): Mapping of vertices to clusters.
+        landmark_map (set): Set containing landmark vertices.
+        spine (set): Set containing edges on spine.
+        branches (set): Set containing edges on spinal branches.
+
+    Returns:
+        Vis.js formatted network data.
+    """
+
     nodes = []
     for v in G.vertices():
         v_id = G.vertex_index[v]
@@ -271,6 +356,16 @@ def to_vis_json_cluster_map(G,
 
 
 def to_vis_json_metagraph(metanodes, cross_edges):
+    """Produce Vis.js formatted network data (for children metagraphs).
+
+    Args:
+        metanodes (dict): Metanodes of the metagraph.
+        cross_edges (dict): Edges running between metanodes.
+
+    Returns:
+        Vis.js formatted network data.
+    """
+
     nodes = []
     for mn_id, node_info in metanodes.iteritems():
         long_label = node_info['fully_qualified_label']

@@ -7,12 +7,21 @@ from HierarchicalPartitioningTree import PartitionTree, PartitionNode
 
 
 def connected_components(G, vertex_indices=None, edge_indices=None):
-    '''
-    Partition Type: Vertex
+    """Partition by connected components.
 
+    Partition Type: Vertex
     Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and partition vertices by connected components.
-    '''
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
+    """
 
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
@@ -84,12 +93,21 @@ def connected_components(G, vertex_indices=None, edge_indices=None):
 
 
 def biconnected_components(G, vertex_indices=None, edge_indices=None):
-    '''
-    Partition Type: Edge
+    """Partition by biconnected components.
 
+    Partition Type: Edge
     Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and partition vertices by biconnected components.
-    '''
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
+    """
 
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
@@ -155,12 +173,21 @@ def biconnected_components(G, vertex_indices=None, edge_indices=None):
 
 
 def edge_peel(G, vertex_indices=None, edge_indices=None):
-    '''
-    Partition Type: Edge
+    """Partition by edge peeling.
 
+    Partition Type: Edge
     Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and partition edges by means of iterative peeling.
-    '''
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
+    """
 
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
@@ -242,16 +269,26 @@ def edge_peel(G, vertex_indices=None, edge_indices=None):
 
 
 def peel_one(G):
-    '''
-    Partition Type: Node
+    """Separate into vertices of peel one (and isolated vertices) and vertices
+    of peel greater than one.
 
+    Partition Type: Node
     Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and group nodes as either peel less than or equal to 1,
         or greater than 1.
     NOTE: Input graph G will have its filters cleared, if any
     NOTE: Usage recommended only at beginning of tree exploration
     NOTE: peel one is not a proper edge partition
-    '''
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
+    """
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
         raise ValueError(err_msg)
@@ -312,6 +349,23 @@ def peel_one(G):
 
 
 def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
+    """Partition by landmark clustering.
+
+    Partition Type: Node
+    Description: Given graph G and sets of both vertex and edge indices,
+        induce subgraph and perform landmark clustering.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+        cluster_assignment (dict): Mapping of vertices to their cluster
+                                   assignments.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
+    """
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
         raise ValueError(err_msg)
@@ -365,17 +419,25 @@ def landmark_cluster_partition(G, vlist, elist, cluster_assignment):
 
 
 def k_connected_components(G, vertex_indices=None, edge_indices=None):
-    """
+    """Partition by k-connected components
     TODO: Implement
 
     Partition Type: TBD (kind of vertex and edge, but not really a partition)
-
     Description: Given graph G and sets of both vertex and edge indices,
         induce subgraph and maximally break (NOT PARTITION) into k-connected
         components.
+
+    Args:
+        G (graph_tool.Graph): The graph instance.
+        vertex_indices (list): List of vertex indices to induce upon.
+        edge_indices (list): List of edge indices to induce upon.
+
+    Returns:
+        A list of information dicts about the newly-created children nodes
+        after partitioning/decomposition.
     """
 
-    '''
+    """
     if not isinstance(G, gt.Graph):
         err_msg = 'G must be a graph_tool.Graph instance'
         raise ValueError(err_msg)
@@ -418,5 +480,5 @@ def k_connected_components(G, vertex_indices=None, edge_indices=None):
     N = len(k_components[largest_k])
     for s in k_components[largest_k]:
         pass
-    '''
+    """
     return

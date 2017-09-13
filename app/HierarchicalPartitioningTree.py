@@ -2,6 +2,11 @@ import cPickle as pickle
 import graph_tool.all as gt
 import numpy as np
 import Queue
+"""HierarchicalPartitioningTree
+
+This module contains the class definitions for the Hierarchical Partitioning
+Tree -- PartitionTree and PartitionNode.
+"""
 
 
 class PartitionTree(object):

@@ -3,6 +3,13 @@ import graph_tool.all as gt
 import numpy as np
 from HierarchicalPartitioningTree import PartitionTree, PartitionNode
 from PartitionMethods import *
+"""TreeExploration
+
+This module provides a helper class that aides in recursively decomposing an
+input graph by cycling through the partitioning methods availabe in the
+PartitionMethods module. Recursive decomposition ends when a node, its parent,
+and its grandparent contain the same exact vertex and edge indices.
+"""
 
 
 class TreeExploration(object):
@@ -90,13 +97,13 @@ class TreeExploration(object):
 
     def explore_tree(self, root=None, threshold=256,
                      separate_peel_one=True, check_partition=False):
-        '''
+        """
         Begin partitioning by recursively breaking nodes where |V| < threshold.
         'separate_peel_one' creates two children of root node partitioning
             vertices by less than or equal to peel 1 and greater than peel 1
         'check_partition' checks the integrity of the partitioning;
             considerably increases running time
-        '''
+        """
 
         if not root:
             root = self.T.root

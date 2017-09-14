@@ -139,6 +139,15 @@
         overflow: auto;
     }
 
+    #nodesPointingToSinksTableContainer {
+        width: 375px;
+        height: 350px;
+        margin: 5px;
+        border: 1px solid lightgray;
+        float: left;
+        overflow: auto;
+    }
+
     .leafNodeCircle {
         border-radius: 50%;
         width: 12px;
@@ -379,7 +388,24 @@
                     </tr>
                 </tbody>
             </table>
-        </div> 
+        </div>
+         <div id="nodesPointingToSinksTableContainer">
+            <table id="nodesPointingToSinksTable" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th>Sink Label</th>
+                        <th>Descr.</th>
+                        <th>Depth</th>
+                    </tr>
+                </thead>
+                <tbody id="nodesPointingToSinksTableContentArea" class="clusterize-content">
+                    <tr class="clusterize-no-data">
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
         <div style="clear: both;">
             <button id="getIntraClusterDescriptionsBtn" type="button">Get Intra-cluster Descriptions</button>
             <button id="getSinkDescriptionsBtn" type="button">Get Sink Descriptions</button>
@@ -801,6 +827,32 @@
         fetch_node_info(selectedNode['id']);
     });
 
+    $('body').on('click', '#nodesPointingToSinksTable tr', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+        } else {
+            $(this).addClass('selected').siblings().removeClass('selected');
+        }
+        var vertex_label = $(this).children('td').eq(0).text();
+
+        var updateArray = [];
+        var selectedNode = null;
+        for (var nodeID in allNodes) {
+            var node = allNodes[nodeID];
+            if (node['label'] == vertex_label) {
+                node['color'] = undefined;
+                selectedNode = node;
+            } else {
+                node['color'] = 'rgba(200,200,200,0.5)';
+            }
+            updateArray.push(node);
+        }
+        nodesDataset.update(updateArray);
+        highlightActive = true;
+        fetch_node_info(selectedNode['id']);
+    });
+
     $('#getNodeChildrenBtn').on('click', function(e) {
         var node = $("#hierarchyTree li>span.selected");
         var fullyQualifiedLabel = node.attr('data-value');
@@ -871,6 +923,7 @@
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
         $('#sinksTableContentArea').empty();
+        $('#nodesPointintToSinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#induceNodeSubgraphBtn :button').prop('disabled', true);
@@ -909,6 +962,7 @@
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
         $('#sinksTableContentArea').empty();
+        $('#nodesPointintToSinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#landmarksBtn :button').prop('disabled', true);
@@ -1171,6 +1225,29 @@
             });
         }
 
+        // make a map for quick lookup. only the keys matter.
+        var sinksMap = {};
+        for (var sink in sinks) {
+            sinksMap[sinks[sink]['id']] = 1;
+        }
+
+        var nodesPointingToSinks = {};
+        nodesLoop:
+        for (var i = 0; i < sinks.length; i++) {
+            var neighbors = network.getConnectedNodes(sinks[i]['id']);
+            for (var j = 0; j < neighbors.length; j++) {
+                var node = allNodes[neighbors[j]];
+                if (!nodesPointingToSinks.hasOwnProperty(node['id'])) {
+                    nodesPointingToSinks[node['id']] = {
+                        'id': node['id'],
+                        'label': node['label'],
+                        'group': node['group'],
+                    }
+                }
+            }
+        }
+        nodesPointingToSinks = Object.values(nodesPointingToSinks);
+
         $.ajax({
             type: 'GET',
             url: '/get-sink-info',
@@ -1200,6 +1277,41 @@
                     rows: rows,
                     scrollId: 'sinksTableContainer',
                     contentId: 'sinksTableContentArea'
+                });
+
+                toggleArrows();
+            },
+            complete: function() { }
+        });
+
+        $.ajax({
+            type: 'GET',
+            url: '/get-sink-info',
+            data: {
+                nodes: JSON.stringify(nodesPointingToSinks)
+            },
+            success: function(response) {
+                if (response.hasOwnProperty('msg')) {
+                    alert(response['msg']);
+                    return;
+                }
+                var networkGroups = network['groups']['groups'];
+                var rows = [];
+                for (var i = 0; i < nodesPointingToSinks.length; i++) {
+                    var node = nodesPointingToSinks[i];
+                    var rgbMap = hexToRgb(networkGroups[node['group']]['color']['background']);
+                    var rgbColorString = toRgbColorString(rgbMap);
+                    var resp = response[node['label']];
+                    rows.push('<tr style="background-color: ' + rgbColorString + '" data-value="' + node['id'] + '">' +
+                                '<td>' + node['label'] + '</td>' +
+                                '<td>' + resp['elements'] + '</td>' +
+                                '<td>' + resp['depth'] + '</td>' +
+                                '</tr>');
+                }
+                var clusterize = new Clusterize({
+                    rows: rows,
+                    scrollId: 'nodesPointingToSinksTableContainer',
+                    contentId: 'nodesPointingToSinksTableContentArea'
                 });
 
                 toggleArrows();

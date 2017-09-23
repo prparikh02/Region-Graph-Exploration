@@ -177,6 +177,9 @@ def next_highest_depth(regions, set_region_composition):
             # TODO: if all regions have single depth
             pass
         for r_i in composing_regions:
+            # insert region into adjacency if seen for first time
+            if r_i not in adjacency:
+                adjacency[r_i] = set()
             generating_sets_i = regions[r_i]['sets']
             depth_i = len(generating_sets_i)
             if depth_i == max_depth:

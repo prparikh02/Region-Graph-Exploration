@@ -340,7 +340,7 @@
         </div>
     </div>
 
-    <div id="clusterDescriptions" style="display: none;">
+    <div id="clusterDescriptions" style="display: none; clear: both;">
         <div id="landmarksTableContainer">
             <table id="landmarksTable" style="table-layout: fixed;">
                 <thead>
@@ -393,7 +393,7 @@
             <table id="nodesPointingToSinksTable" style="table-layout: fixed;">
                 <thead>
                     <tr>
-                        <th>Sink Label</th>
+                        <th>Node Label</th>
                         <th>Descr.</th>
                         <th>Depth</th>
                     </tr>
@@ -923,7 +923,7 @@
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
         $('#sinksTableContentArea').empty();
-        $('#nodesPointintToSinksTableContentArea').empty();
+        $('#nodesPointingToSinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#induceNodeSubgraphBtn :button').prop('disabled', true);
@@ -962,7 +962,7 @@
         $('#clustersTableContentArea').empty();
         $('#landmarksTableContentArea').empty();
         $('#sinksTableContentArea').empty();
-        $('#nodesPointintToSinksTableContentArea').empty();
+        $('#nodesPointingToSinksTableContentArea').empty();
 
         var fullyQualifiedLabel = node.attr('data-value');
         $('#landmarksBtn :button').prop('disabled', true);
@@ -1225,6 +1225,12 @@
             });
         }
 
+        sinks.sort(function(a, b) {
+            if (a['group'] > b['group']) return 1;
+            if (a['group'] < b['group']) return -1;
+            return 0;
+        });
+
         // make a map for quick lookup. only the keys matter.
         var sinksMap = {};
         for (var sink in sinks) {
@@ -1247,6 +1253,11 @@
             }
         }
         nodesPointingToSinks = Object.values(nodesPointingToSinks);
+        nodesPointingToSinks.sort(function(a, b) {
+            if (a['group'] > b['group']) return 1;
+            if (a['group'] < b['group']) return -1;
+            return 0;
+        });
 
         $.ajax({
             type: 'GET',

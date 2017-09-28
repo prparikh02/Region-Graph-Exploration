@@ -53,7 +53,7 @@ class TreeExploration(object):
         children = peel_one(self.G)
         self._attach_children(node, children, False)
         if len(children) == 1:
-            new_root = children[0] if 'LTE1' not in children[0] else None
+            new_root = children[0] if 'LTE1' not in children[0].label else None
         else:
             new_root = \
                 children[0] if 'GT1' in children[0].label else children[1]

@@ -1,6 +1,9 @@
 import argparse
 import graph_tool.all as gt
-import app.TreeExploration as TreeExploration
+import sys
+sys.path.append('/home/ubuntu/Region-Graph-Exploration/app')
+
+import TreeExploration as TreeExploration
 
 
 def init_argparser():
